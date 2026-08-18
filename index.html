@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tax & Logbook Tracker</title>
     <style>
-        /* Clean, Minimalist UI - No ugly graphics */
+        /* Clean, Minimalist UI */
         :root {
             --bg: #f9f9fb;
             --surface: #ffffff;
@@ -18,7 +18,6 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        
         body { background-color: var(--bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding-bottom: 80px; }
 
         /* Login Screen */
@@ -28,7 +27,6 @@
         
         /* App Layout */
         #app-screen { display: none; max-width: 600px; margin: 0 auto; padding: 20px; }
-        
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-top: 20px; }
         header h1 { font-size: 22px; font-weight: 600; }
         .logout-btn { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; }
@@ -37,18 +35,21 @@
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-muted); }
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: var(--surface); color: var(--text-main); appearance: none; }
+        input[type="file"] { padding: 9px; font-size: 14px; background: var(--bg); }
         input:focus, select:focus { outline: none; border-color: var(--primary); }
         
         button.btn-primary { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         button.btn-primary:active { background: var(--primary-hover); }
+        button.btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
 
         /* Lists & Cards */
         .section-title { font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
         .list-container { display: flex; flex-direction: column; gap: 12px; }
-        .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
         .item-details h4 { font-size: 15px; margin-bottom: 4px; font-weight: 500;}
-        .item-details p { font-size: 13px; color: var(--text-muted); }
-        .item-amount { font-size: 16px; font-weight: 600; }
+        .item-details p { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+        .receipt-link { font-size: 12px; color: #2563eb; text-decoration: none; font-weight: 500; display: inline-block; margin-top: 4px; }
+        .item-amount { font-size: 16px; font-weight: 600; text-align: right; }
         
         /* Bottom Navigation Tabs */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 15px 0 25px 0; max-width: 600px; left: 50%; transform: translateX(-50%); }
@@ -90,12 +91,16 @@
                 <input type="date" id="gen-date">
             </div>
             <div class="form-group">
-                <label>Item Name (e.g., Laptop, Desk)</label>
+                <label>Item Name</label>
                 <input type="text" id="gen-name" placeholder="What did you buy?">
             </div>
             <div class="form-group">
                 <label>Amount ($)</label>
                 <input type="number" id="gen-amount" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+                <label>Attach Receipt (Optional)</label>
+                <input type="file" id="gen-receipt" accept="image/*,.pdf">
             </div>
             <button class="btn-primary" id="save-gen-btn" style="margin-bottom: 20px;">Save Expense</button>
 
@@ -122,6 +127,10 @@
                 <label>Amount ($)</label>
                 <input type="number" id="veh-amount" step="0.01" placeholder="0.00">
             </div>
+            <div class="form-group">
+                <label>Attach Receipt (Optional)</label>
+                <input type="file" id="veh-receipt" accept="image/*,.pdf">
+            </div>
             <button class="btn-primary" id="save-veh-btn" style="margin-bottom: 20px;">Save Vehicle Log</button>
 
             <h3 class="section-title">Vehicle History</h3>
@@ -138,8 +147,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
 
-        // Your specific configuration injected here!
         const firebaseConfig = {
             apiKey: "AIzaSyA755Wto94JCIKehtFbV48nIEub4mUd9bM",
             authDomain: "tax-tracker-76496.firebaseapp.com",
@@ -152,6 +161,7 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app); // Initialize Storage
 
         // --- DOM Elements ---
         const authScreen = document.getElementById('auth-screen');
@@ -168,7 +178,6 @@
             document.getElementById('header-title').innerText = title;
         }
 
-        // Set default dates to today
         document.getElementById('gen-date').valueAsDate = new Date();
         document.getElementById('veh-date').valueAsDate = new Date();
 
@@ -178,7 +187,7 @@
                 authScreen.style.display = 'none';
                 appScreen.style.display = 'block';
                 bottomNav.style.display = 'flex';
-                loadData(); // Load data only when authenticated
+                loadData(); 
             } else {
                 authScreen.style.display = 'flex';
                 appScreen.style.display = 'none';
@@ -198,41 +207,82 @@
 
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
+        // --- Helper: Upload File to Storage ---
+        async function uploadReceipt(file, folderName) {
+            if (!file) return null;
+            // Create a unique filename using timestamp
+            const storageRef = ref(storage, `${folderName}/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            return await getDownloadURL(storageRef);
+        }
+
         // --- Database Logic: Save General Expense ---
         document.getElementById('save-gen-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-gen-btn');
             const date = document.getElementById('gen-date').value;
             const name = document.getElementById('gen-name').value;
             const amount = document.getElementById('gen-amount').value;
+            const file = document.getElementById('gen-receipt').files[0];
             
             if(!name || !amount) return alert("Please fill in name and amount.");
 
-            await addDoc(collection(db, "tax_general_expenses"), {
-                date: date,
-                itemName: name,
-                amount: parseFloat(amount),
-                timestamp: serverTimestamp() // Future proofing
-            });
+            btn.innerText = "Uploading & Saving...";
+            btn.disabled = true;
 
-            document.getElementById('gen-name').value = '';
-            document.getElementById('gen-amount').value = '';
+            try {
+                const receiptUrl = await uploadReceipt(file, 'general_receipts');
+
+                await addDoc(collection(db, "tax_general_expenses"), {
+                    date: date,
+                    itemName: name,
+                    amount: parseFloat(amount),
+                    receiptUrl: receiptUrl, // Will be null if no file attached
+                    timestamp: serverTimestamp()
+                });
+
+                document.getElementById('gen-name').value = '';
+                document.getElementById('gen-amount').value = '';
+                document.getElementById('gen-receipt').value = '';
+            } catch (error) {
+                alert("Error saving: " + error.message);
+            }
+
+            btn.innerText = "Save Expense";
+            btn.disabled = false;
         });
 
         // --- Database Logic: Save Vehicle Log ---
         document.getElementById('save-veh-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-veh-btn');
             const date = document.getElementById('veh-date').value;
             const type = document.getElementById('veh-type').value;
             const amount = document.getElementById('veh-amount').value;
+            const file = document.getElementById('veh-receipt').files[0];
             
             if(!amount) return alert("Please enter an amount.");
 
-            await addDoc(collection(db, "tax_vehicle_logs"), {
-                date: date,
-                type: type,
-                amount: parseFloat(amount),
-                timestamp: serverTimestamp() // Future proofing
-            });
+            btn.innerText = "Uploading & Saving...";
+            btn.disabled = true;
 
-            document.getElementById('veh-amount').value = '';
+            try {
+                const receiptUrl = await uploadReceipt(file, 'vehicle_receipts');
+
+                await addDoc(collection(db, "tax_vehicle_logs"), {
+                    date: date,
+                    type: type,
+                    amount: parseFloat(amount),
+                    receiptUrl: receiptUrl, // Will be null if no file attached
+                    timestamp: serverTimestamp()
+                });
+
+                document.getElementById('veh-amount').value = '';
+                document.getElementById('veh-receipt').value = '';
+            } catch (error) {
+                alert("Error saving: " + error.message);
+            }
+
+            btn.innerText = "Save Vehicle Log";
+            btn.disabled = false;
         });
 
         // --- Database Logic: Realtime Listeners ---
@@ -244,11 +294,14 @@
                 list.innerHTML = '';
                 snapshot.forEach((doc) => {
                     const data = doc.data();
+                    const receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">📎 View Receipt</a>` : '';
+                    
                     list.innerHTML += `
                         <div class="item-card">
                             <div class="item-details">
                                 <h4>${data.itemName}</h4>
                                 <p>${data.date}</p>
+                                ${receiptHtml}
                             </div>
                             <div class="item-amount">$${data.amount.toFixed(2)}</div>
                         </div>
@@ -263,11 +316,14 @@
                 list.innerHTML = '';
                 snapshot.forEach((doc) => {
                     const data = doc.data();
+                    const receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">📎 View Receipt</a>` : '';
+
                     list.innerHTML += `
                         <div class="item-card">
                             <div class="item-details">
                                 <h4>${data.type}</h4>
                                 <p>${data.date}</p>
+                                ${receiptHtml}
                             </div>
                             <div class="item-amount">$${data.amount.toFixed(2)}</div>
                         </div>
