@@ -162,7 +162,7 @@
                 <label>Attach Receipt (Optional)</label>
                 <input type="file" id="gen-receipt" accept="image/*,.pdf">
             </div>
-            <button class="btn-primary" onclick="saveNewRecord('general')">Save Expense</button>
+            <button class="btn-primary" onclick="saveNewRecord('general')" style="margin-bottom: 20px;">Save Expense</button>
 
             <h3 class="section-title">Recent Purchases</h3>
             <div class="list-container" id="general-list"></div>
@@ -191,7 +191,7 @@
                 <label>Attach Receipt (Optional)</label>
                 <input type="file" id="veh-receipt" accept="image/*,.pdf">
             </div>
-            <button class="btn-primary" onclick="saveNewRecord('vehicle')">Save Vehicle Log</button>
+            <button class="btn-primary" onclick="saveNewRecord('vehicle')" style="margin-bottom: 20px;">Save Vehicle Log</button>
 
             <h3 class="section-title">Vehicle History</h3>
             <div class="list-container" id="vehicle-list"></div>
@@ -315,17 +315,35 @@
         });
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // --- Storage Logic ---
-        async function uploadReceipt(file, folderName) {
+        // --- Storage Logic (UPGRADED FOR SEQUENTIAL NAMING -01, -02) ---
+        async function uploadReceipt(file, folderName, customName, itemDate, colKey) {
             if (!file) return { url: null, path: null };
-            const path = `${folderName}/${Date.now()}_${file.name}`;
+            
+            const extension = file.name.split('.').pop();
+            const cleanName = customName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            
+            // Count existing items for this date/name to build the -01 sequence
+            let matchCount = 0;
+            if (window.appData && window.appData[colKey]) {
+                Object.values(window.appData[colKey]).forEach(item => {
+                    const itemName = colKey === 'general' ? item.itemName : item.type;
+                    if (itemName === customName && item.date === itemDate) {
+                        matchCount++;
+                    }
+                });
+            }
+            
+            const sequence = String(matchCount + 1).padStart(2, '0');
+            const newFileName = `${cleanName}_${itemDate}-${sequence}.${extension}`;
+            
+            const path = `${folderName}/${newFileName}`;
             const storageRef = ref(storage, path);
             await uploadBytes(storageRef, file);
             const url = await getDownloadURL(storageRef);
             return { url, path };
         }
 
-        // --- Save New Record (Combined Function) ---
+        // --- Save New Record ---
         window.saveNewRecord = async function(type) {
             const isGen = type === 'general';
             const colName = isGen ? "tax_general_expenses" : "tax_vehicle_logs";
@@ -339,14 +357,15 @@
 
             showLoader("Uploading & Saving...");
             try {
-                const receiptData = await uploadReceipt(file, isGen ? 'general_receipts' : 'vehicle_receipts');
+                const folder = isGen ? 'general_receipts' : 'vehicle_receipts';
+                const receiptData = await uploadReceipt(file, folder, nameVal, date, type);
 
                 await addDoc(collection(db, colName), {
                     date: date,
                     [isGen ? 'itemName' : 'type']: nameVal,
                     amount: parseFloat(amount),
                     receiptUrl: receiptData.url,
-                    receiptPath: receiptData.path, // We save path to delete it later
+                    receiptPath: receiptData.path, 
                     timestamp: serverTimestamp()
                 });
 
@@ -366,18 +385,15 @@
             showLoader("Deleting...");
             try {
                 const data = window.appData[type][docId];
-                // 1. Delete file from storage if it exists
                 if(data.receiptPath) {
                     await deleteObject(ref(storage, data.receiptPath)).catch(e => console.log("File already gone or error"));
                 }
-                // 2. Delete document
                 const colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
                 await deleteDoc(doc(db, colName, docId));
             } catch (error) {
                 alert("Error deleting: " + error.message);
             }
             hideLoader();
-            // If in reports view, regenerate to remove it
             if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
         }
 
@@ -390,7 +406,7 @@
             document.getElementById('edit-receipt-path').value = data.receiptPath || "";
             document.getElementById('edit-date').value = data.date;
             document.getElementById('edit-amount').value = data.amount;
-            document.getElementById('edit-receipt').value = ''; // Reset file input
+            document.getElementById('edit-receipt').value = ''; 
 
             const container = document.getElementById('edit-input-container');
             const label = document.getElementById('edit-name-label');
@@ -438,15 +454,13 @@
                     amount: parseFloat(newAmount)
                 };
 
-                // If user selected a new file to replace the old one
                 if (newFile) {
-                    // Delete old file to save storage space
                     if(oldReceiptPath) {
                         await deleteObject(ref(storage, oldReceiptPath)).catch(e => console.log("Old file clear issue"));
                     }
-                    // Upload new
                     const folder = type === 'general' ? 'general_receipts' : 'vehicle_receipts';
-                    const receiptData = await uploadReceipt(newFile, folder);
+                    const receiptData = await uploadReceipt(newFile, folder, newName, newDate, type);
+                    
                     updatePayload.receiptUrl = receiptData.url;
                     updatePayload.receiptPath = receiptData.path;
                 }
@@ -454,14 +468,12 @@
                 await updateDoc(doc(db, colName, docId), updatePayload);
                 closeEditModal();
                 
-                // Refresh report if open
                 if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
             } catch(e) {
                 alert("Error updating: " + e.message);
             }
             hideLoader();
         });
-
 
         // --- Realtime Data & UI Generators ---
         function createCardHTML(data, type) {
@@ -517,7 +529,6 @@
             
             if(!start || !end) return alert("Select start and end dates.");
 
-            // Combine and filter locally (Fastest and doesn't require Firebase compound indexes)
             let results = [];
 
             if(cat === 'All' || cat.includes('General')) {
@@ -532,10 +543,9 @@
             if(cat === 'All' || cat.includes('Vehicle')) {
                 Object.values(window.appData.vehicle).forEach(item => {
                     if(item.date >= start && item.date <= end) {
-                        // If specific vehicle category chosen (e.g. Vehicle_Fuel)
                         if(cat.includes('_') && cat !== 'Vehicle_All') {
                             const subCat = cat.split('_')[1];
-                            if(item.type !== subCat) return; // Skip if not match
+                            if(item.type !== subCat) return; 
                         }
                         item._type = 'vehicle';
                         results.push(item);
@@ -546,7 +556,6 @@
             // Sort by Date Descending
             results.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            // Calculate & Render
             let total = 0;
             const list = document.getElementById('report-list');
             list.innerHTML = '';
