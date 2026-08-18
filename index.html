@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tax & Logbook Tracker</title>
+    <style>
+        /* Clean, Minimalist UI - No ugly graphics */
+        :root {
+            --bg: #f9f9fb;
+            --surface: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --primary: #0f172a;
+            --primary-hover: #334155;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        
+        body { background-color: var(--bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding-bottom: 80px; }
+
+        /* Login Screen */
+        #auth-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: var(--surface); z-index: 100; position: fixed; width: 100%; top: 0; }
+        .auth-card { width: 100%; max-width: 360px; }
+        .auth-card h1 { font-size: 24px; margin-bottom: 24px; text-align: center; font-weight: 600; }
+        
+        /* App Layout */
+        #app-screen { display: none; max-width: 600px; margin: 0 auto; padding: 20px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-top: 20px; }
+        header h1 { font-size: 22px; font-weight: 600; }
+        .logout-btn { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; }
+
+        /* Forms */
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-muted); }
+        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: var(--surface); color: var(--text-main); appearance: none; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        
+        button.btn-primary { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        button.btn-primary:active { background: var(--primary-hover); }
+
+        /* Lists & Cards */
+        .section-title { font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .list-container { display: flex; flex-direction: column; gap: 12px; }
+        .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .item-details h4 { font-size: 15px; margin-bottom: 4px; font-weight: 500;}
+        .item-details p { font-size: 13px; color: var(--text-muted); }
+        .item-amount { font-size: 16px; font-weight: 600; }
+        
+        /* Bottom Navigation Tabs */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 15px 0 25px 0; max-width: 600px; left: 50%; transform: translateX(-50%); }
+        .nav-item { background: none; border: none; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 8px 16px; border-radius: 20px; }
+        .nav-item.active { background: var(--bg); color: var(--primary); font-weight: 600; }
+
+        /* Tab Views */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="auth-card">
+            <h1>Tax Tracker Login</h1>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="••••••••">
+            </div>
+            <button class="btn-primary" id="login-btn">Log In</button>
+            <p id="auth-error" style="color: var(--danger); font-size: 13px; margin-top: 12px; text-align: center;"></p>
+        </div>
+    </div>
+
+    <div id="app-screen">
+        <header>
+            <h1 id="header-title">General Expenses</h1>
+            <button class="logout-btn" id="logout-btn">Log Out</button>
+        </header>
+
+        <div id="tab-general" class="tab-content active">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="gen-date">
+            </div>
+            <div class="form-group">
+                <label>Item Name (e.g., Laptop, Desk)</label>
+                <input type="text" id="gen-name" placeholder="What did you buy?">
+            </div>
+            <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" id="gen-amount" step="0.01" placeholder="0.00">
+            </div>
+            <button class="btn-primary" id="save-gen-btn" style="margin-bottom: 20px;">Save Expense</button>
+
+            <h3 class="section-title">Recent Purchases</h3>
+            <div class="list-container" id="general-list"></div>
+        </div>
+
+        <div id="tab-vehicle" class="tab-content">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="veh-date">
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="veh-type">
+                    <option value="Fuel">Fuel</option>
+                    <option value="Maintenance/Service">Maintenance/Service</option>
+                    <option value="Registration">Registration</option>
+                    <option value="Insurance">Insurance</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" id="veh-amount" step="0.01" placeholder="0.00">
+            </div>
+            <button class="btn-primary" id="save-veh-btn" style="margin-bottom: 20px;">Save Vehicle Log</button>
+
+            <h3 class="section-title">Vehicle History</h3>
+            <div class="list-container" id="vehicle-list"></div>
+        </div>
+    </div>
+
+    <div class="bottom-nav" id="bottom-nav" style="display:none;">
+        <button class="nav-item active" onclick="switchTab('general', 'General Expenses')">General</button>
+        <button class="nav-item" onclick="switchTab('vehicle', 'Vehicle Logbook')">Vehicle</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ==========================================
+        // PASTE YOUR FIREBASE CONFIG HERE
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- DOM Elements ---
+        const authScreen = document.getElementById('auth-screen');
+        const appScreen = document.getElementById('app-screen');
+        const bottomNav = document.getElementById('bottom-nav');
+        
+        // --- Navigation Logic ---
+        window.switchTab = function(tabId, title) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.target.classList.add('active');
+            document.getElementById('header-title').innerText = title;
+        }
+
+        // Set default dates to today
+        document.getElementById('gen-date').valueAsDate = new Date();
+        document.getElementById('veh-date').valueAsDate = new Date();
+
+        // --- Authentication Logic ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authScreen.style.display = 'none';
+                appScreen.style.display = 'block';
+                bottomNav.style.display = 'flex';
+                loadData(); // Load data only when authenticated
+            } else {
+                authScreen.style.display = 'flex';
+                appScreen.style.display = 'none';
+                bottomNav.style.display = 'none';
+            }
+        });
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                document.getElementById('auth-error').innerText = "Access Denied. Check credentials.";
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+        // --- Database Logic: Save General Expense ---
+        document.getElementById('save-gen-btn').addEventListener('click', async () => {
+            const date = document.getElementById('gen-date').value;
+            const name = document.getElementById('gen-name').value;
+            const amount = document.getElementById('gen-amount').value;
+            
+            if(!name || !amount) return alert("Please fill in name and amount.");
+
+            await addDoc(collection(db, "tax_general_expenses"), {
+                date: date,
+                itemName: name,
+                amount: parseFloat(amount),
+                timestamp: serverTimestamp() // Future proofing
+            });
+
+            document.getElementById('gen-name').value = '';
+            document.getElementById('gen-amount').value = '';
+        });
+
+        // --- Database Logic: Save Vehicle Log ---
+        document.getElementById('save-veh-btn').addEventListener('click', async () => {
+            const date = document.getElementById('veh-date').value;
+            const type = document.getElementById('veh-type').value;
+            const amount = document.getElementById('veh-amount').value;
+            
+            if(!amount) return alert("Please enter an amount.");
+
+            await addDoc(collection(db, "tax_vehicle_logs"), {
+                date: date,
+                type: type,
+                amount: parseFloat(amount),
+                timestamp: serverTimestamp() // Future proofing
+            });
+
+            document.getElementById('veh-amount').value = '';
+        });
+
+        // --- Database Logic: Realtime Listeners ---
+        function loadData() {
+            // Listen to General Expenses
+            const qGen = query(collection(db, "tax_general_expenses"), orderBy("date", "desc"));
+            onSnapshot(qGen, (snapshot) => {
+                const list = document.getElementById('general-list');
+                list.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    list.innerHTML += `
+                        <div class="item-card">
+                            <div class="item-details">
+                                <h4>${data.itemName}</h4>
+                                <p>${data.date}</p>
+                            </div>
+                            <div class="item-amount">$${data.amount.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+            });
+
+            // Listen to Vehicle Logs
+            const qVeh = query(collection(db, "tax_vehicle_logs"), orderBy("date", "desc"));
+            onSnapshot(qVeh, (snapshot) => {
+                const list = document.getElementById('vehicle-list');
+                list.innerHTML = '';
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    list.innerHTML += `
+                        <div class="item-card">
+                            <div class="item-details">
+                                <h4>${data.type}</h4>
+                                <p>${data.date}</p>
+                            </div>
+                            <div class="item-amount">$${data.amount.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
