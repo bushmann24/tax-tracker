@@ -135,20 +135,18 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
-        // ==========================================
-        // PASTE YOUR FIREBASE CONFIG HERE
-        // ==========================================
+        // Your specific configuration injected here!
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyA755Wto94JCIKehtFbV48nIEub4mUd9bM",
+            authDomain: "tax-tracker-76496.firebaseapp.com",
+            projectId: "tax-tracker-76496",
+            storageBucket: "tax-tracker-76496.firebasestorage.app",
+            messagingSenderId: "589121242725",
+            appId: "1:589121242725:web:4fbb023d26289fa124288c"
         };
 
         const app = initializeApp(firebaseConfig);
