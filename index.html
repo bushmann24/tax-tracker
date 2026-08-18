@@ -257,8 +257,9 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // Global State for Reports and Editing
+        // Global State
         window.appData = { general: {}, vehicle: {} };
+        let activeUserId = null; // THIS STORES WHO IS LOGGED IN
 
         // --- Navigation ---
         window.switchTab = function(tabId, title) {
@@ -269,35 +270,32 @@
             document.getElementById('header-title').innerText = title;
         }
 
-        // Set default dates
         const today = new Date();
         document.getElementById('gen-date').valueAsDate = today;
         document.getElementById('veh-date').valueAsDate = today;
         
-        // Report Defaults (1st of July to Today for Tax Year)
         let julyFirst = new Date(today.getFullYear(), 6, 1);
         if(today.getMonth() < 6) julyFirst = new Date(today.getFullYear() - 1, 6, 1);
         document.getElementById('rep-start').valueAsDate = julyFirst;
         document.getElementById('rep-end').valueAsDate = today;
 
-        // --- Loader Logic ---
         window.showLoader = (text = "Processing...") => {
             document.getElementById('loading-text').innerText = text;
             document.getElementById('loading-overlay').style.display = 'flex';
         }
-        window.hideLoader = () => {
-            document.getElementById('loading-overlay').style.display = 'none';
-        }
+        window.hideLoader = () => { document.getElementById('loading-overlay').style.display = 'none'; }
 
         // --- Authentication ---
         onAuthStateChanged(auth, (user) => {
             document.getElementById('initial-load').style.display = 'none';
             if (user) {
+                activeUserId = user.uid; // Set the Vault Key
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'block';
                 document.getElementById('bottom-nav').style.display = 'flex';
                 loadData(); 
             } else {
+                activeUserId = null;
                 document.getElementById('auth-screen').style.display = 'flex';
                 document.getElementById('app-screen').style.display = 'none';
                 document.getElementById('bottom-nav').style.display = 'none';
@@ -315,14 +313,13 @@
         });
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // --- Storage Logic (UPGRADED FOR SEQUENTIAL NAMING -01, -02) ---
+        // --- Storage Logic (NOW MULTI-USER) ---
         async function uploadReceipt(file, folderName, customName, itemDate, colKey) {
             if (!file) return { url: null, path: null };
             
             const extension = file.name.split('.').pop();
             const cleanName = customName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
             
-            // Count existing items for this date/name to build the -01 sequence
             let matchCount = 0;
             if (window.appData && window.appData[colKey]) {
                 Object.values(window.appData[colKey]).forEach(item => {
@@ -336,14 +333,15 @@
             const sequence = String(matchCount + 1).padStart(2, '0');
             const newFileName = `${cleanName}_${itemDate}-${sequence}.${extension}`;
             
-            const path = `${folderName}/${newFileName}`;
+            // MAGIC HERE: Saves into users/UID/folder/file
+            const path = `users/${activeUserId}/${folderName}/${newFileName}`;
             const storageRef = ref(storage, path);
             await uploadBytes(storageRef, file);
             const url = await getDownloadURL(storageRef);
             return { url, path };
         }
 
-        // --- Save New Record ---
+        // --- Save New Record (NOW MULTI-USER) ---
         window.saveNewRecord = async function(type) {
             const isGen = type === 'general';
             const colName = isGen ? "tax_general_expenses" : "tax_vehicle_logs";
@@ -360,7 +358,8 @@
                 const folder = isGen ? 'general_receipts' : 'vehicle_receipts';
                 const receiptData = await uploadReceipt(file, folder, nameVal, date, type);
 
-                await addDoc(collection(db, colName), {
+                // MAGIC HERE: Saves into users/UID/collection
+                await addDoc(collection(db, `users/${activeUserId}/${colName}`), {
                     date: date,
                     [isGen ? 'itemName' : 'type']: nameVal,
                     amount: parseFloat(amount),
@@ -378,7 +377,7 @@
             hideLoader();
         }
 
-        // --- Delete Record ---
+        // --- Delete Record (NOW MULTI-USER) ---
         window.deleteRecord = async function(type, docId) {
             if(!confirm("Are you sure you want to permanently delete this?")) return;
             
@@ -389,7 +388,8 @@
                     await deleteObject(ref(storage, data.receiptPath)).catch(e => console.log("File already gone or error"));
                 }
                 const colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
-                await deleteDoc(doc(db, colName, docId));
+                // MAGIC HERE: Deletes from users/UID/collection
+                await deleteDoc(doc(db, `users/${activeUserId}/${colName}`, docId));
             } catch (error) {
                 alert("Error deleting: " + error.message);
             }
@@ -465,7 +465,8 @@
                     updatePayload.receiptPath = receiptData.path;
                 }
 
-                await updateDoc(doc(db, colName, docId), updatePayload);
+                // MAGIC HERE: Updates users/UID/collection
+                await updateDoc(doc(db, `users/${activeUserId}/${colName}`, docId), updatePayload);
                 closeEditModal();
                 
                 if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
@@ -475,7 +476,7 @@
             hideLoader();
         });
 
-        // --- Realtime Data & UI Generators ---
+        // --- Realtime Data & UI Generators (NOW MULTI-USER) ---
         function createCardHTML(data, type) {
             const name = type === 'general' ? data.itemName : data.type;
             const receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">View Receipt</a>` : '';
@@ -498,7 +499,11 @@
         }
 
         function loadData() {
-            onSnapshot(query(collection(db, "tax_general_expenses"), orderBy("date", "desc")), (snapshot) => {
+            if(!activeUserId) return;
+
+            // MAGIC HERE: Queries ONLY the logged-in user's Vault
+            const genPath = `users/${activeUserId}/tax_general_expenses`;
+            onSnapshot(query(collection(db, genPath), orderBy("date", "desc")), (snapshot) => {
                 const list = document.getElementById('general-list');
                 list.innerHTML = '';
                 window.appData.general = {};
@@ -509,7 +514,8 @@
                 });
             });
 
-            onSnapshot(query(collection(db, "tax_vehicle_logs"), orderBy("date", "desc")), (snapshot) => {
+            const vehPath = `users/${activeUserId}/tax_vehicle_logs`;
+            onSnapshot(query(collection(db, vehPath), orderBy("date", "desc")), (snapshot) => {
                 const list = document.getElementById('vehicle-list');
                 list.innerHTML = '';
                 window.appData.vehicle = {};
@@ -553,7 +559,6 @@
                 });
             }
 
-            // Sort by Date Descending
             results.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             let total = 0;
