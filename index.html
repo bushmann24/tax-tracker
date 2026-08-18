@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f9f9fb">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="manifest" href="manifest.json">
+    
     <title>Tax & Logbook Tracker</title>
     <style>
-        /* Clean, Minimalist UI */
         :root {
             --bg: #f9f9fb;
             --surface: #ffffff;
@@ -18,20 +24,25 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding-bottom: 80px; }
+        body { background-color: var(--bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding-bottom: 90px; }
 
-        /* Login Screen */
-        #auth-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: var(--surface); z-index: 100; position: fixed; width: 100%; top: 0; }
+        /* Loading / Buffering Overlay */
+        #initial-load { height: 100vh; display: flex; justify-content: center; align-items: center; background: var(--bg); position: fixed; width: 100%; top: 0; z-index: 200; }
+        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center; flex-direction: column; color: white; font-weight: 500;}
+        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 12px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Screens */
+        #auth-screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: var(--surface); z-index: 100; position: fixed; width: 100%; top: 0; }
         .auth-card { width: 100%; max-width: 360px; }
         .auth-card h1 { font-size: 24px; margin-bottom: 24px; text-align: center; font-weight: 600; }
-        
-        /* App Layout */
         #app-screen { display: none; max-width: 600px; margin: 0 auto; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-top: 20px; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-top: 10px; }
         header h1 { font-size: 22px; font-weight: 600; }
         .logout-btn { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; }
 
-        /* Forms */
+        /* Forms & Inputs */
         .form-group { margin-bottom: 16px; }
         label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-muted); }
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: var(--surface); color: var(--text-main); appearance: none; }
@@ -40,28 +51,77 @@
         
         button.btn-primary { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         button.btn-primary:active { background: var(--primary-hover); }
-        button.btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        button.btn-secondary { width: 100%; padding: 12px; background: var(--bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px;}
+        button.btn-danger { width: 100%; padding: 12px; background: white; color: var(--danger); border: 1px solid var(--danger); border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px;}
 
         /* Lists & Cards */
-        .section-title { font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .section-title { font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end;}
         .list-container { display: flex; flex-direction: column; gap: 12px; }
-        .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; position: relative; }
+        .item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
         .item-details h4 { font-size: 15px; margin-bottom: 4px; font-weight: 500;}
         .item-details p { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
-        .receipt-link { font-size: 12px; color: #2563eb; text-decoration: none; font-weight: 500; display: inline-block; margin-top: 4px; }
+        .receipt-link { font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 500; display: inline-block; }
         .item-amount { font-size: 16px; font-weight: 600; text-align: right; }
+        .item-actions { display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
+        .item-actions button { flex: 1; padding: 6px; font-size: 13px; font-weight: 500; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
+        .item-actions button.del { color: var(--danger); border-color: #fca5a5; background: #fef2f2; }
+
+        /* Report Total Banner */
+        .report-total { background: var(--primary); color: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
+        .report-total h3 { font-size: 14px; font-weight: 500; opacity: 0.9; margin-bottom: 4px;}
+        .report-total h2 { font-size: 28px; font-weight: 600; }
+
+        /* Edit Modal */
+        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; justify-content: center; align-items: flex-end; }
+        .modal-content { background: var(--surface); width: 100%; max-width: 600px; padding: 25px; border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; }
         
         /* Bottom Navigation Tabs */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 15px 0 25px 0; max-width: 600px; left: 50%; transform: translateX(-50%); }
-        .nav-item { background: none; border: none; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 8px 16px; border-radius: 20px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 15px 0 25px 0; max-width: 600px; left: 50%; transform: translateX(-50%); z-index: 100;}
+        .nav-item { background: none; border: none; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 8px 16px; border-radius: 20px; }
         .nav-item.active { background: var(--bg); color: var(--primary); font-weight: 600; }
 
-        /* Tab Views */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
     </style>
 </head>
 <body>
+
+    <div id="initial-load"></div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text">Processing...</p>
+    </div>
+
+    <div id="edit-modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Edit Expense</h2>
+            <input type="hidden" id="edit-id">
+            <input type="hidden" id="edit-collection">
+            <input type="hidden" id="edit-receipt-path">
+            
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="edit-date">
+            </div>
+            <div class="form-group" id="edit-name-group">
+                <label id="edit-name-label">Item Name</label>
+                <div id="edit-input-container"></div>
+            </div>
+            <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" id="edit-amount" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Update Receipt (Optional)</label>
+                <input type="file" id="edit-receipt" accept="image/*,.pdf">
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Uploading a new file deletes the old one.</p>
+            </div>
+            <button class="btn-primary" id="save-edit-btn">Save Changes</button>
+            <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+        </div>
+    </div>
 
     <div id="auth-screen">
         <div class="auth-card">
@@ -102,7 +162,7 @@
                 <label>Attach Receipt (Optional)</label>
                 <input type="file" id="gen-receipt" accept="image/*,.pdf">
             </div>
-            <button class="btn-primary" id="save-gen-btn" style="margin-bottom: 20px;">Save Expense</button>
+            <button class="btn-primary" onclick="saveNewRecord('general')">Save Expense</button>
 
             <h3 class="section-title">Recent Purchases</h3>
             <div class="list-container" id="general-list"></div>
@@ -131,23 +191,57 @@
                 <label>Attach Receipt (Optional)</label>
                 <input type="file" id="veh-receipt" accept="image/*,.pdf">
             </div>
-            <button class="btn-primary" id="save-veh-btn" style="margin-bottom: 20px;">Save Vehicle Log</button>
+            <button class="btn-primary" onclick="saveNewRecord('vehicle')">Save Vehicle Log</button>
 
             <h3 class="section-title">Vehicle History</h3>
             <div class="list-container" id="vehicle-list"></div>
+        </div>
+
+        <div id="tab-reports" class="tab-content">
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" id="rep-start">
+            </div>
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" id="rep-end">
+            </div>
+            <div class="form-group">
+                <label>Filter By Category</label>
+                <select id="rep-category">
+                    <option value="All">All Transactions (Everything)</option>
+                    <option value="General_All">All General Expenses</option>
+                    <option value="Vehicle_All">All Vehicle Expenses</option>
+                    <option value="Vehicle_Fuel">Vehicle - Fuel Only</option>
+                    <option value="Vehicle_Maintenance/Service">Vehicle - Maintenance/Service</option>
+                    <option value="Vehicle_Registration">Vehicle - Registration</option>
+                    <option value="Vehicle_Insurance">Vehicle - Insurance</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="generateReport()" style="margin-bottom: 25px;">Generate Report</button>
+
+            <div id="report-results" style="display:none;">
+                <div class="report-total">
+                    <h3>Total Claimable for Period</h3>
+                    <h2 id="report-total-amount">$0.00</h2>
+                </div>
+                <h3 class="section-title">Filtered Transactions <span id="report-count" style="font-size:13px; color:var(--text-muted); font-weight:normal;"></span></h3>
+                <div class="list-container" id="report-list"></div>
+            </div>
         </div>
     </div>
 
     <div class="bottom-nav" id="bottom-nav" style="display:none;">
         <button class="nav-item active" onclick="switchTab('general', 'General Expenses')">General</button>
         <button class="nav-item" onclick="switchTab('vehicle', 'Vehicle Logbook')">Vehicle</button>
+        <button class="nav-item" onclick="switchTab('reports', 'Tax Reports')">Reports</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA755Wto94JCIKehtFbV48nIEub4mUd9bM",
@@ -161,175 +255,310 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app); // Initialize Storage
+        const storage = getStorage(app);
 
-        // --- DOM Elements ---
-        const authScreen = document.getElementById('auth-screen');
-        const appScreen = document.getElementById('app-screen');
-        const bottomNav = document.getElementById('bottom-nav');
-        
-        // --- Navigation Logic ---
+        // Global State for Reports and Editing
+        window.appData = { general: {}, vehicle: {} };
+
+        // --- Navigation ---
         window.switchTab = function(tabId, title) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
             document.getElementById('tab-' + tabId).classList.add('active');
             event.target.classList.add('active');
             document.getElementById('header-title').innerText = title;
         }
 
-        document.getElementById('gen-date').valueAsDate = new Date();
-        document.getElementById('veh-date').valueAsDate = new Date();
+        // Set default dates
+        const today = new Date();
+        document.getElementById('gen-date').valueAsDate = today;
+        document.getElementById('veh-date').valueAsDate = today;
+        
+        // Report Defaults (1st of July to Today for Tax Year)
+        let julyFirst = new Date(today.getFullYear(), 6, 1);
+        if(today.getMonth() < 6) julyFirst = new Date(today.getFullYear() - 1, 6, 1);
+        document.getElementById('rep-start').valueAsDate = julyFirst;
+        document.getElementById('rep-end').valueAsDate = today;
 
-        // --- Authentication Logic ---
+        // --- Loader Logic ---
+        window.showLoader = (text = "Processing...") => {
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+        window.hideLoader = () => {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        // --- Authentication ---
         onAuthStateChanged(auth, (user) => {
+            document.getElementById('initial-load').style.display = 'none';
             if (user) {
-                authScreen.style.display = 'none';
-                appScreen.style.display = 'block';
-                bottomNav.style.display = 'flex';
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'block';
+                document.getElementById('bottom-nav').style.display = 'flex';
                 loadData(); 
             } else {
-                authScreen.style.display = 'flex';
-                appScreen.style.display = 'none';
-                bottomNav.style.display = 'none';
+                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('app-screen').style.display = 'none';
+                document.getElementById('bottom-nav').style.display = 'none';
             }
         });
 
         document.getElementById('login-btn').addEventListener('click', async () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            showLoader("Logging in...");
             try {
-                await signInWithEmailAndPassword(auth, email, password);
+                await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('password').value);
             } catch (error) {
                 document.getElementById('auth-error').innerText = "Access Denied. Check credentials.";
             }
+            hideLoader();
         });
-
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // --- Helper: Upload File to Storage ---
+        // --- Storage Logic ---
         async function uploadReceipt(file, folderName) {
-            if (!file) return null;
-            // Create a unique filename using timestamp
-            const storageRef = ref(storage, `${folderName}/${Date.now()}_${file.name}`);
+            if (!file) return { url: null, path: null };
+            const path = `${folderName}/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, path);
             await uploadBytes(storageRef, file);
-            return await getDownloadURL(storageRef);
+            const url = await getDownloadURL(storageRef);
+            return { url, path };
         }
 
-        // --- Database Logic: Save General Expense ---
-        document.getElementById('save-gen-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('save-gen-btn');
-            const date = document.getElementById('gen-date').value;
-            const name = document.getElementById('gen-name').value;
-            const amount = document.getElementById('gen-amount').value;
-            const file = document.getElementById('gen-receipt').files[0];
+        // --- Save New Record (Combined Function) ---
+        window.saveNewRecord = async function(type) {
+            const isGen = type === 'general';
+            const colName = isGen ? "tax_general_expenses" : "tax_vehicle_logs";
             
-            if(!name || !amount) return alert("Please fill in name and amount.");
+            const date = document.getElementById(isGen ? 'gen-date' : 'veh-date').value;
+            const nameVal = document.getElementById(isGen ? 'gen-name' : 'veh-type').value;
+            const amount = document.getElementById(isGen ? 'gen-amount' : 'veh-amount').value;
+            const file = document.getElementById(isGen ? 'gen-receipt' : 'veh-receipt').files[0];
+            
+            if(!nameVal || !amount) return alert("Please fill in all details.");
 
-            btn.innerText = "Uploading & Saving...";
-            btn.disabled = true;
-
+            showLoader("Uploading & Saving...");
             try {
-                const receiptUrl = await uploadReceipt(file, 'general_receipts');
+                const receiptData = await uploadReceipt(file, isGen ? 'general_receipts' : 'vehicle_receipts');
 
-                await addDoc(collection(db, "tax_general_expenses"), {
+                await addDoc(collection(db, colName), {
                     date: date,
-                    itemName: name,
+                    [isGen ? 'itemName' : 'type']: nameVal,
                     amount: parseFloat(amount),
-                    receiptUrl: receiptUrl, // Will be null if no file attached
+                    receiptUrl: receiptData.url,
+                    receiptPath: receiptData.path, // We save path to delete it later
                     timestamp: serverTimestamp()
                 });
 
-                document.getElementById('gen-name').value = '';
-                document.getElementById('gen-amount').value = '';
-                document.getElementById('gen-receipt').value = '';
+                document.getElementById(isGen ? 'gen-amount' : 'veh-amount').value = '';
+                document.getElementById(isGen ? 'gen-receipt' : 'veh-receipt').value = '';
+                if(isGen) document.getElementById('gen-name').value = '';
             } catch (error) {
-                alert("Error saving: " + error.message);
+                alert("Error: " + error.message);
             }
+            hideLoader();
+        }
 
-            btn.innerText = "Save Expense";
-            btn.disabled = false;
-        });
-
-        // --- Database Logic: Save Vehicle Log ---
-        document.getElementById('save-veh-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('save-veh-btn');
-            const date = document.getElementById('veh-date').value;
-            const type = document.getElementById('veh-type').value;
-            const amount = document.getElementById('veh-amount').value;
-            const file = document.getElementById('veh-receipt').files[0];
+        // --- Delete Record ---
+        window.deleteRecord = async function(type, docId) {
+            if(!confirm("Are you sure you want to permanently delete this?")) return;
             
-            if(!amount) return alert("Please enter an amount.");
-
-            btn.innerText = "Uploading & Saving...";
-            btn.disabled = true;
-
+            showLoader("Deleting...");
             try {
-                const receiptUrl = await uploadReceipt(file, 'vehicle_receipts');
-
-                await addDoc(collection(db, "tax_vehicle_logs"), {
-                    date: date,
-                    type: type,
-                    amount: parseFloat(amount),
-                    receiptUrl: receiptUrl, // Will be null if no file attached
-                    timestamp: serverTimestamp()
-                });
-
-                document.getElementById('veh-amount').value = '';
-                document.getElementById('veh-receipt').value = '';
+                const data = window.appData[type][docId];
+                // 1. Delete file from storage if it exists
+                if(data.receiptPath) {
+                    await deleteObject(ref(storage, data.receiptPath)).catch(e => console.log("File already gone or error"));
+                }
+                // 2. Delete document
+                const colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
+                await deleteDoc(doc(db, colName, docId));
             } catch (error) {
-                alert("Error saving: " + error.message);
+                alert("Error deleting: " + error.message);
             }
+            hideLoader();
+            // If in reports view, regenerate to remove it
+            if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
+        }
 
-            btn.innerText = "Save Vehicle Log";
-            btn.disabled = false;
+        // --- Edit Modal Logic ---
+        window.openEditModal = function(type, docId) {
+            const data = window.appData[type][docId];
+            
+            document.getElementById('edit-id').value = docId;
+            document.getElementById('edit-collection').value = type;
+            document.getElementById('edit-receipt-path').value = data.receiptPath || "";
+            document.getElementById('edit-date').value = data.date;
+            document.getElementById('edit-amount').value = data.amount;
+            document.getElementById('edit-receipt').value = ''; // Reset file input
+
+            const container = document.getElementById('edit-input-container');
+            const label = document.getElementById('edit-name-label');
+
+            if(type === 'general') {
+                label.innerText = "Item Name";
+                container.innerHTML = `<input type="text" id="edit-name" value="${data.itemName}">`;
+            } else {
+                label.innerText = "Type";
+                container.innerHTML = `
+                    <select id="edit-name">
+                        <option value="Fuel" ${data.type === 'Fuel' ? 'selected' : ''}>Fuel</option>
+                        <option value="Maintenance/Service" ${data.type === 'Maintenance/Service' ? 'selected' : ''}>Maintenance/Service</option>
+                        <option value="Registration" ${data.type === 'Registration' ? 'selected' : ''}>Registration</option>
+                        <option value="Insurance" ${data.type === 'Insurance' ? 'selected' : ''}>Insurance</option>
+                        <option value="Other" ${data.type === 'Other' ? 'selected' : ''}>Other</option>
+                    </select>
+                `;
+            }
+            document.getElementById('edit-modal').style.display = 'flex';
+        }
+
+        window.closeEditModal = function() {
+            document.getElementById('edit-modal').style.display = 'none';
+        }
+
+        document.getElementById('save-edit-btn').addEventListener('click', async () => {
+            const docId = document.getElementById('edit-id').value;
+            const type = document.getElementById('edit-collection').value;
+            const oldReceiptPath = document.getElementById('edit-receipt-path').value;
+            
+            const newDate = document.getElementById('edit-date').value;
+            const newName = document.getElementById('edit-name').value;
+            const newAmount = document.getElementById('edit-amount').value;
+            const newFile = document.getElementById('edit-receipt').files[0];
+
+            if(!newName || !newAmount) return alert("Please fill details.");
+
+            showLoader("Updating...");
+            try {
+                const colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
+                let updatePayload = {
+                    date: newDate,
+                    [type === 'general' ? 'itemName' : 'type']: newName,
+                    amount: parseFloat(newAmount)
+                };
+
+                // If user selected a new file to replace the old one
+                if (newFile) {
+                    // Delete old file to save storage space
+                    if(oldReceiptPath) {
+                        await deleteObject(ref(storage, oldReceiptPath)).catch(e => console.log("Old file clear issue"));
+                    }
+                    // Upload new
+                    const folder = type === 'general' ? 'general_receipts' : 'vehicle_receipts';
+                    const receiptData = await uploadReceipt(newFile, folder);
+                    updatePayload.receiptUrl = receiptData.url;
+                    updatePayload.receiptPath = receiptData.path;
+                }
+
+                await updateDoc(doc(db, colName, docId), updatePayload);
+                closeEditModal();
+                
+                // Refresh report if open
+                if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
+            } catch(e) {
+                alert("Error updating: " + e.message);
+            }
+            hideLoader();
         });
 
-        // --- Database Logic: Realtime Listeners ---
+
+        // --- Realtime Data & UI Generators ---
+        function createCardHTML(data, type) {
+            const name = type === 'general' ? data.itemName : data.type;
+            const receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">View Receipt</a>` : '';
+            return `
+                <div class="item-card">
+                    <div class="item-top">
+                        <div class="item-details">
+                            <h4>${name}</h4>
+                            <p>${data.date}</p>
+                            ${receiptHtml}
+                        </div>
+                        <div class="item-amount">$${data.amount.toFixed(2)}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button onclick="openEditModal('${type}', '${data.id}')">Edit</button>
+                        <button class="del" onclick="deleteRecord('${type}', '${data.id}')">Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
         function loadData() {
-            // Listen to General Expenses
-            const qGen = query(collection(db, "tax_general_expenses"), orderBy("date", "desc"));
-            onSnapshot(qGen, (snapshot) => {
+            onSnapshot(query(collection(db, "tax_general_expenses"), orderBy("date", "desc")), (snapshot) => {
                 const list = document.getElementById('general-list');
                 list.innerHTML = '';
+                window.appData.general = {};
                 snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">📎 View Receipt</a>` : '';
-                    
-                    list.innerHTML += `
-                        <div class="item-card">
-                            <div class="item-details">
-                                <h4>${data.itemName}</h4>
-                                <p>${data.date}</p>
-                                ${receiptHtml}
-                            </div>
-                            <div class="item-amount">$${data.amount.toFixed(2)}</div>
-                        </div>
-                    `;
+                    const data = { id: doc.id, ...doc.data() };
+                    window.appData.general[doc.id] = data;
+                    list.innerHTML += createCardHTML(data, 'general');
                 });
             });
 
-            // Listen to Vehicle Logs
-            const qVeh = query(collection(db, "tax_vehicle_logs"), orderBy("date", "desc"));
-            onSnapshot(qVeh, (snapshot) => {
+            onSnapshot(query(collection(db, "tax_vehicle_logs"), orderBy("date", "desc")), (snapshot) => {
                 const list = document.getElementById('vehicle-list');
                 list.innerHTML = '';
+                window.appData.vehicle = {};
                 snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">📎 View Receipt</a>` : '';
-
-                    list.innerHTML += `
-                        <div class="item-card">
-                            <div class="item-details">
-                                <h4>${data.type}</h4>
-                                <p>${data.date}</p>
-                                ${receiptHtml}
-                            </div>
-                            <div class="item-amount">$${data.amount.toFixed(2)}</div>
-                        </div>
-                    `;
+                    const data = { id: doc.id, ...doc.data() };
+                    window.appData.vehicle[doc.id] = data;
+                    list.innerHTML += createCardHTML(data, 'vehicle');
                 });
             });
+        }
+
+        // --- Tax Reports Engine ---
+        window.generateReport = function() {
+            const start = document.getElementById('rep-start').value;
+            const end = document.getElementById('rep-end').value;
+            const cat = document.getElementById('rep-category').value;
+            
+            if(!start || !end) return alert("Select start and end dates.");
+
+            // Combine and filter locally (Fastest and doesn't require Firebase compound indexes)
+            let results = [];
+
+            if(cat === 'All' || cat.includes('General')) {
+                Object.values(window.appData.general).forEach(item => {
+                    if(item.date >= start && item.date <= end) {
+                        item._type = 'general';
+                        results.push(item);
+                    }
+                });
+            }
+
+            if(cat === 'All' || cat.includes('Vehicle')) {
+                Object.values(window.appData.vehicle).forEach(item => {
+                    if(item.date >= start && item.date <= end) {
+                        // If specific vehicle category chosen (e.g. Vehicle_Fuel)
+                        if(cat.includes('_') && cat !== 'Vehicle_All') {
+                            const subCat = cat.split('_')[1];
+                            if(item.type !== subCat) return; // Skip if not match
+                        }
+                        item._type = 'vehicle';
+                        results.push(item);
+                    }
+                });
+            }
+
+            // Sort by Date Descending
+            results.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Calculate & Render
+            let total = 0;
+            const list = document.getElementById('report-list');
+            list.innerHTML = '';
+
+            results.forEach(data => {
+                total += data.amount;
+                list.innerHTML += createCardHTML(data, data._type);
+            });
+
+            document.getElementById('report-total-amount').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('report-count').innerText = `(${results.length} items)`;
+            document.getElementById('report-results').style.display = 'block';
         }
     </script>
 </body>
