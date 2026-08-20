@@ -4,99 +4,114 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- PWA & Apple App Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#f9f9fb">
+    <meta name="theme-color" content="#f2f2f7">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
     
     <title>Tax & Logbook Tracker</title>
     <style>
+        /* PREMIUM NATIVE UI OVERHAUL */
         :root {
-            --bg: #f9f9fb;
+            --bg: #f2f2f7;
             --surface: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --primary: #0f172a;
-            --primary-hover: #334155;
-            --danger: #ef4444;
+            --text-main: #1c1c1e;
+            --text-muted: #8e8e93;
+            --border: #e5e5ea;
+            --primary: #007aff;
+            --primary-hover: #0056b3;
+            --danger: #ff3b30;
+            --success: #34c759;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: var(--bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding-bottom: 90px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); -webkit-font-smoothing: antialiased; padding-bottom: 100px; }
 
         /* Loading / Buffering Overlay */
         #initial-load { height: 100vh; display: flex; justify-content: center; align-items: center; background: var(--bg); position: fixed; width: 100%; top: 0; z-index: 200; }
-        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center; flex-direction: column; color: white; font-weight: 500;}
-        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 12px; }
+        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 999; justify-content: center; align-items: center; flex-direction: column; color: white; font-weight: 600;}
+        .spinner { border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 44px; height: 44px; animation: spin 1s linear infinite; margin-bottom: 16px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Screens */
-        #auth-screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 20px; background: var(--surface); z-index: 100; position: fixed; width: 100%; top: 0; }
-        .auth-card { width: 100%; max-width: 360px; }
-        .auth-card h1 { font-size: 24px; margin-bottom: 24px; text-align: center; font-weight: 600; }
-        #app-screen { display: none; max-width: 600px; margin: 0 auto; padding: 20px; }
+        #auth-screen { display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 24px; background: var(--bg); z-index: 100; position: fixed; width: 100%; top: 0; }
+        .auth-card { width: 100%; max-width: 360px; background: var(--surface); padding: 32px 24px; border-radius: 20px; box-shadow: var(--card-shadow); }
+        .auth-card h1 { font-size: 24px; margin-bottom: 24px; text-align: center; font-weight: 700; letter-spacing: -0.5px;}
         
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-top: 10px; }
-        header h1 { font-size: 22px; font-weight: 600; }
-        .logout-btn { background: none; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; }
+        #app-screen { display: none; max-width: 600px; margin: 0 auto; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-top: 10px; }
+        header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+        .logout-btn { background: none; border: none; color: var(--primary); font-size: 15px; font-weight: 500; cursor: pointer; }
 
         /* Forms & Inputs */
-        .form-group { margin-bottom: 16px; }
-        label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-muted); }
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: var(--surface); color: var(--text-main); appearance: none; }
-        input[type="file"] { padding: 9px; font-size: 14px; background: var(--bg); }
-        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
+        input, select { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 16px; background: var(--surface); color: var(--text-main); appearance: none; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.02);}
+        input[type="file"] { padding: 11px; font-size: 14px; background: var(--bg); border: 1px dashed #c7c7cc;}
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); }
         
-        button.btn-primary { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        button.btn-primary:active { background: var(--primary-hover); }
-        button.btn-secondary { width: 100%; padding: 12px; background: var(--bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px;}
-        button.btn-danger { width: 100%; padding: 12px; background: white; color: var(--danger); border: 1px solid var(--danger); border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px;}
+        /* Buttons */
+        button.btn-primary { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); margin-bottom: 24px;}
+        button.btn-primary:active { background: var(--primary-hover); transform: scale(0.98);}
+        button.btn-secondary { width: 100%; padding: 14px; background: var(--bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px;}
+        
+        /* WFH Punch Clock Buttons */
+        button.btn-start { background: var(--success); box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3); }
+        button.btn-end { background: var(--danger); box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); }
 
         /* Lists & Cards */
-        .section-title { font-size: 16px; font-weight: 600; margin: 30px 0 15px 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end;}
-        .list-container { display: flex; flex-direction: column; gap: 12px; }
-        .item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; position: relative; }
-        .item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .item-details h4 { font-size: 15px; margin-bottom: 4px; font-weight: 500;}
-        .item-details p { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
-        .receipt-link { font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 500; display: inline-block; }
-        .item-amount { font-size: 16px; font-weight: 600; text-align: right; }
-        .item-actions { display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
-        .item-actions button { flex: 1; padding: 6px; font-size: 13px; font-weight: 500; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
-        .item-actions button.del { color: var(--danger); border-color: #fca5a5; background: #fef2f2; }
+        .section-title { font-size: 18px; font-weight: 700; margin: 32px 0 16px 0; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; letter-spacing: -0.3px;}
+        .list-container { display: flex; flex-direction: column; gap: 14px; }
+        .item-card { background: var(--surface); border: 1px solid rgba(0,0,0,0.03); border-radius: 16px; padding: 18px; position: relative; box-shadow: var(--card-shadow); }
+        .item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .item-details h4 { font-size: 16px; margin-bottom: 4px; font-weight: 600; letter-spacing: -0.2px;}
+        .item-details p { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+        .receipt-link { font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 500; display: inline-block; background: rgba(0, 122, 255, 0.1); padding: 4px 10px; border-radius: 6px;}
+        .item-amount { font-size: 18px; font-weight: 700; text-align: right; letter-spacing: -0.5px;}
+        .item-actions { display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; }
+        .item-actions button { flex: 1; padding: 8px; font-size: 14px; font-weight: 500; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
+        .item-actions button.del { color: var(--danger); border-color: rgba(255, 59, 48, 0.2); background: rgba(255, 59, 48, 0.05); }
+
+        /* WFH Status Widget */
+        #wfh-status-widget { background: var(--surface); border-radius: 16px; padding: 24px; text-align: center; box-shadow: var(--card-shadow); margin-bottom: 24px; border: 1px solid rgba(0,0,0,0.03);}
+        #wfh-status-text { font-size: 15px; color: var(--text-muted); font-weight: 500; margin-bottom: 8px;}
+        #wfh-active-time { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 20px;}
 
         /* Report Total Banner */
-        .report-total { background: var(--primary); color: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; }
-        .report-total h3 { font-size: 14px; font-weight: 500; opacity: 0.9; margin-bottom: 4px;}
-        .report-total h2 { font-size: 28px; font-weight: 600; }
+        .report-total { background: linear-gradient(135deg, #007aff, #0056b3); color: white; padding: 24px; border-radius: 16px; text-align: center; margin-bottom: 24px; box-shadow: 0 8px 20px rgba(0, 122, 255, 0.25); }
+        .report-total h3 { font-size: 14px; font-weight: 600; opacity: 0.9; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px;}
+        .report-total h2 { font-size: 36px; font-weight: 700; letter-spacing: -1px;}
 
-        /* Edit Modal */
-        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; justify-content: center; align-items: flex-end; }
-        .modal-content { background: var(--surface); width: 100%; max-width: 600px; padding: 25px; border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; }
-        
         /* Bottom Navigation Tabs */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 15px 0 25px 0; max-width: 600px; left: 50%; transform: translateX(-50%); z-index: 100;}
-        .nav-item { background: none; border: none; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; padding: 8px 16px; border-radius: 20px; }
-        .nav-item.active { background: var(--bg); color: var(--primary); font-weight: 600; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-around; padding: 12px 10px 24px 10px; z-index: 100; box-shadow: 0 -4px 12px rgba(0,0,0,0.02);}
+        .nav-item { flex: 1; background: none; border: none; font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer; padding: 10px 0; border-radius: 12px; text-align: center; transition: all 0.2s;}
+        .nav-item.active { color: var(--primary); background: rgba(0, 122, 255, 0.1); }
 
-        .tab-content { display: none; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Edit Modal */
+        #edit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 500; justify-content: center; align-items: flex-end; }
+        .modal-content { background: var(--bg); width: 100%; max-width: 600px; padding: 32px 24px; border-radius: 24px 24px 0 0; max-height: 90vh; overflow-y: auto; box-shadow: 0 -10px 25px rgba(0,0,0,0.1);}
     </style>
 </head>
 <body>
 
     <div id="initial-load"></div>
-
     <div id="loading-overlay">
         <div class="spinner"></div>
         <p id="loading-text">Processing...</p>
     </div>
 
+    <!-- Edit Modal -->
     <div id="edit-modal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 20px;">Edit Expense</h2>
+            <h2 style="margin-bottom: 24px; font-weight: 700; font-size: 22px;">Edit Record</h2>
             <input type="hidden" id="edit-id">
             <input type="hidden" id="edit-collection">
             <input type="hidden" id="edit-receipt-path">
@@ -110,22 +125,22 @@
                 <div id="edit-input-container"></div>
             </div>
             <div class="form-group">
-                <label>Amount ($)</label>
+                <label id="edit-amount-label">Amount ($)</label>
                 <input type="number" id="edit-amount" step="0.01">
             </div>
-            <div class="form-group">
+            <div class="form-group" id="edit-receipt-group">
                 <label>Update Receipt (Optional)</label>
                 <input type="file" id="edit-receipt" accept="image/*,.pdf">
-                <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Uploading a new file deletes the old one.</p>
             </div>
-            <button class="btn-primary" id="save-edit-btn">Save Changes</button>
+            <button class="btn-primary" id="save-edit-btn" style="margin-bottom: 12px;">Save Changes</button>
             <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
         </div>
     </div>
 
+    <!-- SECURE LOGIN SCREEN -->
     <div id="auth-screen">
         <div class="auth-card">
-            <h1>Tax Tracker Login</h1>
+            <h1>Tax Tracker</h1>
             <div class="form-group">
                 <label>Email</label>
                 <input type="email" id="email" placeholder="you@example.com">
@@ -134,17 +149,19 @@
                 <label>Password</label>
                 <input type="password" id="password" placeholder="••••••••">
             </div>
-            <button class="btn-primary" id="login-btn">Log In</button>
-            <p id="auth-error" style="color: var(--danger); font-size: 13px; margin-top: 12px; text-align: center;"></p>
+            <button class="btn-primary" id="login-btn" style="margin-bottom: 0;">Log In</button>
+            <p id="auth-error" style="color: var(--danger); font-size: 13px; margin-top: 16px; text-align: center; font-weight: 500;"></p>
         </div>
     </div>
 
+    <!-- MAIN APP SCREEN -->
     <div id="app-screen">
         <header>
-            <h1 id="header-title">General Expenses</h1>
-            <button class="logout-btn" id="logout-btn">Log Out</button>
+            <h1 id="header-title">General</h1>
+            <button class="logout-btn" id="logout-btn">Sign Out</button>
         </header>
 
+        <!-- TAB 1: GENERAL EXPENSES -->
         <div id="tab-general" class="tab-content active">
             <div class="form-group">
                 <label>Date</label>
@@ -152,7 +169,7 @@
             </div>
             <div class="form-group">
                 <label>Item Name</label>
-                <input type="text" id="gen-name" placeholder="What did you buy?">
+                <input type="text" id="gen-name" placeholder="E.g. Laptop, Desk">
             </div>
             <div class="form-group">
                 <label>Amount ($)</label>
@@ -162,19 +179,20 @@
                 <label>Attach Receipt (Optional)</label>
                 <input type="file" id="gen-receipt" accept="image/*,.pdf">
             </div>
-            <button class="btn-primary" onclick="saveNewRecord('general')" style="margin-bottom: 20px;">Save Expense</button>
+            <button class="btn-primary" onclick="saveNewRecord('general')">Save Expense</button>
 
             <h3 class="section-title">Recent Purchases</h3>
             <div class="list-container" id="general-list"></div>
         </div>
 
+        <!-- TAB 2: VEHICLE LOGBOOK -->
         <div id="tab-vehicle" class="tab-content">
             <div class="form-group">
                 <label>Date</label>
                 <input type="date" id="veh-date">
             </div>
             <div class="form-group">
-                <label>Type</label>
+                <label>Expense Type</label>
                 <select id="veh-type">
                     <option value="Fuel">Fuel</option>
                     <option value="Maintenance/Service">Maintenance/Service</option>
@@ -191,12 +209,25 @@
                 <label>Attach Receipt (Optional)</label>
                 <input type="file" id="veh-receipt" accept="image/*,.pdf">
             </div>
-            <button class="btn-primary" onclick="saveNewRecord('vehicle')" style="margin-bottom: 20px;">Save Vehicle Log</button>
+            <button class="btn-primary" onclick="saveNewRecord('vehicle')">Save Vehicle Log</button>
 
             <h3 class="section-title">Vehicle History</h3>
             <div class="list-container" id="vehicle-list"></div>
         </div>
 
+        <!-- TAB 3: WFH PUNCH CLOCK -->
+        <div id="tab-wfh" class="tab-content">
+            <div id="wfh-status-widget">
+                <p id="wfh-status-text">Ready to work.</p>
+                <h2 id="wfh-active-time">--:--</h2>
+                <button class="btn-primary btn-start" id="wfh-btn" onclick="toggleWfh()">Start Shift</button>
+            </div>
+
+            <h3 class="section-title">WFH Logbook</h3>
+            <div class="list-container" id="wfh-list"></div>
+        </div>
+
+        <!-- TAB 4: REPORTS & FILTERS -->
         <div id="tab-reports" class="tab-content">
             <div class="form-group">
                 <label>Start Date</label>
@@ -213,30 +244,31 @@
                     <option value="General_All">All General Expenses</option>
                     <option value="Vehicle_All">All Vehicle Expenses</option>
                     <option value="Vehicle_Fuel">Vehicle - Fuel Only</option>
-                    <option value="Vehicle_Maintenance/Service">Vehicle - Maintenance/Service</option>
-                    <option value="Vehicle_Registration">Vehicle - Registration</option>
-                    <option value="Vehicle_Insurance">Vehicle - Insurance</option>
+                    <option value="WFH_All">WFH Logbook (Hours)</option>
                 </select>
             </div>
-            <button class="btn-primary" onclick="generateReport()" style="margin-bottom: 25px;">Generate Report</button>
+            <button class="btn-primary" onclick="generateReport()">Generate Report</button>
 
             <div id="report-results" style="display:none;">
                 <div class="report-total">
-                    <h3>Total Claimable for Period</h3>
+                    <h3 id="report-total-label">Total Claimable</h3>
                     <h2 id="report-total-amount">$0.00</h2>
                 </div>
-                <h3 class="section-title">Filtered Transactions <span id="report-count" style="font-size:13px; color:var(--text-muted); font-weight:normal;"></span></h3>
+                <h3 class="section-title">Filtered Data <span id="report-count" style="font-size:14px; color:var(--text-muted); font-weight:normal;"></span></h3>
                 <div class="list-container" id="report-list"></div>
             </div>
         </div>
     </div>
 
+    <!-- BOTTOM NAVIGATION -->
     <div class="bottom-nav" id="bottom-nav" style="display:none;">
-        <button class="nav-item active" onclick="switchTab('general', 'General Expenses')">General</button>
-        <button class="nav-item" onclick="switchTab('vehicle', 'Vehicle Logbook')">Vehicle</button>
-        <button class="nav-item" onclick="switchTab('reports', 'Tax Reports')">Reports</button>
+        <button class="nav-item active" onclick="switchTab('general', 'General')">General</button>
+        <button class="nav-item" onclick="switchTab('vehicle', 'Vehicle')">Vehicle</button>
+        <button class="nav-item" onclick="switchTab('wfh', 'WFH Log')">WFH</button>
+        <button class="nav-item" onclick="switchTab('reports', 'Reports')">Reports</button>
     </div>
 
+    <!-- FIREBASE MODULE SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
@@ -258,8 +290,8 @@
         const storage = getStorage(app);
 
         // Global State
-        window.appData = { general: {}, vehicle: {} };
-        let activeUserId = null; // THIS STORES WHO IS LOGGED IN
+        window.appData = { general: {}, vehicle: {}, wfh: {} };
+        let activeUserId = null; 
 
         // --- Navigation ---
         window.switchTab = function(tabId, title) {
@@ -289,11 +321,12 @@
         onAuthStateChanged(auth, (user) => {
             document.getElementById('initial-load').style.display = 'none';
             if (user) {
-                activeUserId = user.uid; // Set the Vault Key
+                activeUserId = user.uid; 
                 document.getElementById('auth-screen').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'block';
                 document.getElementById('bottom-nav').style.display = 'flex';
                 loadData(); 
+                updateWfhUI(); // Check if Punch Clock is running
             } else {
                 activeUserId = null;
                 document.getElementById('auth-screen').style.display = 'flex';
@@ -313,7 +346,78 @@
         });
         document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-        // --- Storage Logic (NOW MULTI-USER) ---
+        // --- WFH Punch Clock Logic ---
+        function formatAMPM(date) {
+            let hours = date.getHours();
+            let minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            return hours + ':' + minutes + ' ' + ampm;
+        }
+
+        function updateWfhUI() {
+            const startMs = localStorage.getItem('wfh_active_start');
+            const btn = document.getElementById('wfh-btn');
+            const text = document.getElementById('wfh-status-text');
+            const timeDisplay = document.getElementById('wfh-active-time');
+
+            if (startMs) {
+                const startDate = new Date(parseInt(startMs));
+                text.innerText = "Shift in progress";
+                timeDisplay.innerText = `Started at ${formatAMPM(startDate)}`;
+                btn.innerText = "End Shift";
+                btn.className = "btn-primary btn-end";
+            } else {
+                text.innerText = "Ready to work";
+                timeDisplay.innerText = "--:--";
+                btn.innerText = "Start Shift";
+                btn.className = "btn-primary btn-start";
+            }
+        }
+
+        window.toggleWfh = async function() {
+            const startMs = localStorage.getItem('wfh_active_start');
+            
+            if (!startMs) {
+                // START SHIFT
+                localStorage.setItem('wfh_active_start', Date.now());
+                updateWfhUI();
+            } else {
+                // END SHIFT
+                const endMs = Date.now();
+                const startDate = new Date(parseInt(startMs));
+                const endDate = new Date(endMs);
+
+                // Math to calculate hours
+                const diffMs = endMs - parseInt(startMs);
+                const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(2);
+                
+                const timeString = `${formatAMPM(startDate)} - ${formatAMPM(endDate)}`;
+                // Force to YYYY-MM-DD for local date
+                const offset = startDate.getTimezoneOffset();
+                const localDate = new Date(startDate.getTime() - (offset*60*1000));
+                const dateString = localDate.toISOString().split('T')[0];
+
+                showLoader("Saving Session...");
+                try {
+                    await addDoc(collection(db, `users/${activeUserId}/tax_wfh_logs`), {
+                        date: dateString,
+                        timeString: timeString,
+                        hours: parseFloat(diffHrs),
+                        timestamp: serverTimestamp()
+                    });
+                    localStorage.removeItem('wfh_active_start');
+                    updateWfhUI();
+                } catch (error) {
+                    alert("Error: " + error.message);
+                }
+                hideLoader();
+            }
+        }
+
+        // --- Storage Logic ---
         async function uploadReceipt(file, folderName, customName, itemDate, colKey) {
             if (!file) return { url: null, path: null };
             
@@ -333,7 +437,6 @@
             const sequence = String(matchCount + 1).padStart(2, '0');
             const newFileName = `${cleanName}_${itemDate}-${sequence}.${extension}`;
             
-            // MAGIC HERE: Saves into users/UID/folder/file
             const path = `users/${activeUserId}/${folderName}/${newFileName}`;
             const storageRef = ref(storage, path);
             await uploadBytes(storageRef, file);
@@ -341,7 +444,7 @@
             return { url, path };
         }
 
-        // --- Save New Record (NOW MULTI-USER) ---
+        // --- Save New Record ---
         window.saveNewRecord = async function(type) {
             const isGen = type === 'general';
             const colName = isGen ? "tax_general_expenses" : "tax_vehicle_logs";
@@ -358,7 +461,6 @@
                 const folder = isGen ? 'general_receipts' : 'vehicle_receipts';
                 const receiptData = await uploadReceipt(file, folder, nameVal, date, type);
 
-                // MAGIC HERE: Saves into users/UID/collection
                 await addDoc(collection(db, `users/${activeUserId}/${colName}`), {
                     date: date,
                     [isGen ? 'itemName' : 'type']: nameVal,
@@ -377,7 +479,7 @@
             hideLoader();
         }
 
-        // --- Delete Record (NOW MULTI-USER) ---
+        // --- Delete Record ---
         window.deleteRecord = async function(type, docId) {
             if(!confirm("Are you sure you want to permanently delete this?")) return;
             
@@ -387,8 +489,11 @@
                 if(data.receiptPath) {
                     await deleteObject(ref(storage, data.receiptPath)).catch(e => console.log("File already gone or error"));
                 }
-                const colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
-                // MAGIC HERE: Deletes from users/UID/collection
+                
+                let colName = "tax_wfh_logs";
+                if (type === 'general') colName = "tax_general_expenses";
+                if (type === 'vehicle') colName = "tax_vehicle_logs";
+                
                 await deleteDoc(doc(db, `users/${activeUserId}/${colName}`, docId));
             } catch (error) {
                 alert("Error deleting: " + error.message);
@@ -405,15 +510,25 @@
             document.getElementById('edit-collection').value = type;
             document.getElementById('edit-receipt-path').value = data.receiptPath || "";
             document.getElementById('edit-date').value = data.date;
-            document.getElementById('edit-amount').value = data.amount;
-            document.getElementById('edit-receipt').value = ''; 
-
+            
             const container = document.getElementById('edit-input-container');
             const label = document.getElementById('edit-name-label');
+            const amountInput = document.getElementById('edit-amount');
+            const amountLabel = document.getElementById('edit-amount-label');
+            const receiptGroup = document.getElementById('edit-receipt-group');
 
-            if(type === 'general') {
+            if (type === 'wfh') {
+                label.innerText = "Time String (Read Only)";
+                container.innerHTML = `<input type="text" id="edit-name" value="${data.timeString}" disabled>`;
+                amountLabel.innerText = "Total Hours";
+                amountInput.value = data.hours;
+                receiptGroup.style.display = 'none'; // No receipts for WFH
+            } else if(type === 'general') {
                 label.innerText = "Item Name";
                 container.innerHTML = `<input type="text" id="edit-name" value="${data.itemName}">`;
+                amountLabel.innerText = "Amount ($)";
+                amountInput.value = data.amount;
+                receiptGroup.style.display = 'block';
             } else {
                 label.innerText = "Type";
                 container.innerHTML = `
@@ -425,13 +540,15 @@
                         <option value="Other" ${data.type === 'Other' ? 'selected' : ''}>Other</option>
                     </select>
                 `;
+                amountLabel.innerText = "Amount ($)";
+                amountInput.value = data.amount;
+                receiptGroup.style.display = 'block';
             }
+            document.getElementById('edit-receipt').value = ''; 
             document.getElementById('edit-modal').style.display = 'flex';
         }
 
-        window.closeEditModal = function() {
-            document.getElementById('edit-modal').style.display = 'none';
-        }
+        window.closeEditModal = function() { document.getElementById('edit-modal').style.display = 'none'; }
 
         document.getElementById('save-edit-btn').addEventListener('click', async () => {
             const docId = document.getElementById('edit-id').value;
@@ -443,32 +560,32 @@
             const newAmount = document.getElementById('edit-amount').value;
             const newFile = document.getElementById('edit-receipt').files[0];
 
-            if(!newName || !newAmount) return alert("Please fill details.");
+            if(!newAmount) return alert("Please fill amount/hours.");
 
             showLoader("Updating...");
             try {
-                const colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
-                let updatePayload = {
-                    date: newDate,
-                    [type === 'general' ? 'itemName' : 'type']: newName,
-                    amount: parseFloat(newAmount)
-                };
+                let colName = "tax_wfh_logs";
+                let updatePayload = { date: newDate };
 
-                if (newFile) {
-                    if(oldReceiptPath) {
-                        await deleteObject(ref(storage, oldReceiptPath)).catch(e => console.log("Old file clear issue"));
+                if (type === 'wfh') {
+                    updatePayload.hours = parseFloat(newAmount);
+                } else {
+                    colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
+                    updatePayload.amount = parseFloat(newAmount);
+                    if (type === 'general') updatePayload.itemName = newName;
+                    if (type === 'vehicle') updatePayload.type = newName;
+
+                    if (newFile) {
+                        if(oldReceiptPath) { await deleteObject(ref(storage, oldReceiptPath)).catch(e => console.log("Old file issue")); }
+                        const folder = type === 'general' ? 'general_receipts' : 'vehicle_receipts';
+                        const receiptData = await uploadReceipt(newFile, folder, newName, newDate, type);
+                        updatePayload.receiptUrl = receiptData.url;
+                        updatePayload.receiptPath = receiptData.path;
                     }
-                    const folder = type === 'general' ? 'general_receipts' : 'vehicle_receipts';
-                    const receiptData = await uploadReceipt(newFile, folder, newName, newDate, type);
-                    
-                    updatePayload.receiptUrl = receiptData.url;
-                    updatePayload.receiptPath = receiptData.path;
                 }
 
-                // MAGIC HERE: Updates users/UID/collection
                 await updateDoc(doc(db, `users/${activeUserId}/${colName}`, docId), updatePayload);
                 closeEditModal();
-                
                 if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
             } catch(e) {
                 alert("Error updating: " + e.message);
@@ -476,10 +593,19 @@
             hideLoader();
         });
 
-        // --- Realtime Data & UI Generators (NOW MULTI-USER) ---
+        // --- Realtime Data & UI Generators ---
         function createCardHTML(data, type) {
-            const name = type === 'general' ? data.itemName : data.type;
-            const receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">View Receipt</a>` : '';
+            let name, valueStr, receiptHtml = '';
+            
+            if (type === 'wfh') {
+                name = data.timeString;
+                valueStr = `${data.hours} hrs`;
+            } else {
+                name = type === 'general' ? data.itemName : data.type;
+                valueStr = `$${data.amount.toFixed(2)}`;
+                receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">📎 View Receipt</a>` : '';
+            }
+
             return `
                 <div class="item-card">
                     <div class="item-top">
@@ -488,7 +614,7 @@
                             <p>${data.date}</p>
                             ${receiptHtml}
                         </div>
-                        <div class="item-amount">$${data.amount.toFixed(2)}</div>
+                        <div class="item-amount text-primary">${valueStr}</div>
                     </div>
                     <div class="item-actions">
                         <button onclick="openEditModal('${type}', '${data.id}')">Edit</button>
@@ -501,9 +627,8 @@
         function loadData() {
             if(!activeUserId) return;
 
-            // MAGIC HERE: Queries ONLY the logged-in user's Vault
-            const genPath = `users/${activeUserId}/tax_general_expenses`;
-            onSnapshot(query(collection(db, genPath), orderBy("date", "desc")), (snapshot) => {
+            // General List
+            onSnapshot(query(collection(db, `users/${activeUserId}/tax_general_expenses`), orderBy("date", "desc")), (snapshot) => {
                 const list = document.getElementById('general-list');
                 list.innerHTML = '';
                 window.appData.general = {};
@@ -514,8 +639,8 @@
                 });
             });
 
-            const vehPath = `users/${activeUserId}/tax_vehicle_logs`;
-            onSnapshot(query(collection(db, vehPath), orderBy("date", "desc")), (snapshot) => {
+            // Vehicle List
+            onSnapshot(query(collection(db, `users/${activeUserId}/tax_vehicle_logs`), orderBy("date", "desc")), (snapshot) => {
                 const list = document.getElementById('vehicle-list');
                 list.innerHTML = '';
                 window.appData.vehicle = {};
@@ -523,6 +648,18 @@
                     const data = { id: doc.id, ...doc.data() };
                     window.appData.vehicle[doc.id] = data;
                     list.innerHTML += createCardHTML(data, 'vehicle');
+                });
+            });
+
+            // WFH List
+            onSnapshot(query(collection(db, `users/${activeUserId}/tax_wfh_logs`), orderBy("date", "desc")), (snapshot) => {
+                const list = document.getElementById('wfh-list');
+                list.innerHTML = '';
+                window.appData.wfh = {};
+                snapshot.forEach((doc) => {
+                    const data = { id: doc.id, ...doc.data() };
+                    window.appData.wfh[doc.id] = data;
+                    list.innerHTML += createCardHTML(data, 'wfh');
                 });
             });
         }
@@ -536,8 +673,9 @@
             if(!start || !end) return alert("Select start and end dates.");
 
             let results = [];
+            let isWfhMode = cat === 'WFH_All';
 
-            if(cat === 'All' || cat.includes('General')) {
+            if((cat === 'All' && !isWfhMode) || cat.includes('General')) {
                 Object.values(window.appData.general).forEach(item => {
                     if(item.date >= start && item.date <= end) {
                         item._type = 'general';
@@ -546,7 +684,7 @@
                 });
             }
 
-            if(cat === 'All' || cat.includes('Vehicle')) {
+            if((cat === 'All' && !isWfhMode) || cat.includes('Vehicle')) {
                 Object.values(window.appData.vehicle).forEach(item => {
                     if(item.date >= start && item.date <= end) {
                         if(cat.includes('_') && cat !== 'Vehicle_All') {
@@ -559,6 +697,15 @@
                 });
             }
 
+            if(isWfhMode) {
+                Object.values(window.appData.wfh).forEach(item => {
+                    if(item.date >= start && item.date <= end) {
+                        item._type = 'wfh';
+                        results.push(item);
+                    }
+                });
+            }
+
             results.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             let total = 0;
@@ -566,11 +713,12 @@
             list.innerHTML = '';
 
             results.forEach(data => {
-                total += data.amount;
+                total += (data._type === 'wfh') ? data.hours : data.amount;
                 list.innerHTML += createCardHTML(data, data._type);
             });
 
-            document.getElementById('report-total-amount').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('report-total-label').innerText = isWfhMode ? "Total Logged Hours" : "Total Claimable";
+            document.getElementById('report-total-amount').innerText = isWfhMode ? `${total.toFixed(2)} hrs` : `$${total.toFixed(2)}`;
             document.getElementById('report-count').innerText = `(${results.length} items)`;
             document.getElementById('report-results').style.display = 'block';
         }
