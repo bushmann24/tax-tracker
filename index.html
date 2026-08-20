@@ -46,6 +46,11 @@
         header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
         .logout-btn { background: none; border: none; color: var(--primary); font-size: 15px; font-weight: 500; cursor: pointer; }
 
+        /* Segmented Control (Tabs inside Tabs) */
+        .segmented-control { display: flex; background: #e3e3e8; padding: 4px; border-radius: 14px; margin-bottom: 20px; }
+        .seg-btn { flex: 1; padding: 10px; text-align: center; font-size: 14px; font-weight: 600; color: var(--text-muted); border-radius: 10px; border: none; background: transparent; cursor: pointer; transition: all 0.2s;}
+        .seg-btn.active { background: white; color: var(--text-main); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
         /* Forms & Inputs */
         .form-group { margin-bottom: 18px; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
@@ -62,14 +67,21 @@
         button.btn-start { background: var(--success); box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3); }
         button.btn-end { background: var(--danger); box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3); }
 
-        /* Lists & Cards */
-        .section-title { font-size: 18px; font-weight: 700; margin: 32px 0 16px 0; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-end; letter-spacing: -0.3px;}
+        /* Lists, Cards & Totals */
+        .list-header { display: flex; justify-content: space-between; align-items: flex-end; margin: 32px 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid var(--border);}
+        .section-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin: 0;}
+        .list-total { font-size: 16px; font-weight: 700; color: var(--primary); text-align: right;}
+        .list-total-sub { font-size: 12px; color: var(--text-muted); font-weight: 500;}
+
         .list-container { display: flex; flex-direction: column; gap: 14px; }
         .item-card { background: var(--surface); border: 1px solid rgba(0,0,0,0.03); border-radius: 16px; padding: 18px; position: relative; box-shadow: var(--card-shadow); }
         .item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
         .item-details h4 { font-size: 16px; margin-bottom: 4px; font-weight: 600; letter-spacing: -0.2px;}
         .item-details p { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
-        .receipt-link { font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 500; display: inline-block; background: rgba(0, 122, 255, 0.1); padding: 4px 10px; border-radius: 6px;}
+        
+        /* Clean Blue Bubble Receipt Link */
+        .receipt-link { font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 600; display: inline-block; background: rgba(0, 122, 255, 0.1); padding: 5px 12px; border-radius: 8px;}
+        
         .item-amount { font-size: 18px; font-weight: 700; text-align: right; letter-spacing: -0.5px;}
         .item-actions { display: flex; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; }
         .item-actions button { flex: 1; padding: 8px; font-size: 14px; font-weight: 500; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; }
@@ -115,23 +127,50 @@
             <input type="hidden" id="edit-id">
             <input type="hidden" id="edit-collection">
             <input type="hidden" id="edit-receipt-path">
+            <input type="hidden" id="edit-is-trip">
             
             <div class="form-group">
                 <label>Date</label>
                 <input type="date" id="edit-date">
             </div>
-            <div class="form-group" id="edit-name-group">
-                <label id="edit-name-label">Item Name</label>
-                <div id="edit-input-container"></div>
+
+            <!-- Standard Edit Fields -->
+            <div id="edit-standard-fields">
+                <div class="form-group" id="edit-name-group">
+                    <label id="edit-name-label">Item Name</label>
+                    <div id="edit-input-container"></div>
+                </div>
+                <div class="form-group">
+                    <label id="edit-amount-label">Amount ($)</label>
+                    <input type="number" id="edit-amount" step="0.01">
+                </div>
+                <div class="form-group" id="edit-receipt-group">
+                    <label>Update Receipt (Optional)</label>
+                    <input type="file" id="edit-receipt" accept="image/*,.pdf">
+                </div>
             </div>
-            <div class="form-group">
-                <label id="edit-amount-label">Amount ($)</label>
-                <input type="number" id="edit-amount" step="0.01">
+
+            <!-- Trip Edit Fields -->
+            <div id="edit-trip-fields" style="display: none;">
+                <div class="form-group">
+                    <label>Purpose</label>
+                    <select id="edit-trip-purpose">
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <div class="form-group w-1/2">
+                        <label>Start KM</label>
+                        <input type="number" id="edit-start-km">
+                    </div>
+                    <div class="form-group w-1/2">
+                        <label>End KM</label>
+                        <input type="number" id="edit-end-km">
+                    </div>
+                </div>
             </div>
-            <div class="form-group" id="edit-receipt-group">
-                <label>Update Receipt (Optional)</label>
-                <input type="file" id="edit-receipt" accept="image/*,.pdf">
-            </div>
+
             <button class="btn-primary" id="save-edit-btn" style="margin-bottom: 12px;">Save Changes</button>
             <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
         </div>
@@ -181,38 +220,81 @@
             </div>
             <button class="btn-primary" onclick="saveNewRecord('general')">Save Expense</button>
 
-            <h3 class="section-title">Recent Purchases</h3>
+            <div class="list-header">
+                <h3 class="section-title">Recent</h3>
+                <div class="list-total" id="gen-total-amount">$0.00</div>
+            </div>
             <div class="list-container" id="general-list"></div>
+            <button id="btn-more-gen" class="btn-secondary hidden" onclick="loadMore('general')">Load More</button>
         </div>
 
         <!-- TAB 2: VEHICLE LOGBOOK -->
         <div id="tab-vehicle" class="tab-content">
+            
+            <div class="segmented-control">
+                <button id="veh-seg-exp" class="seg-btn active" onclick="switchVehMode('exp')">Expenses</button>
+                <button id="veh-seg-trip" class="seg-btn" onclick="switchVehMode('trip')">Trips (Logbook)</button>
+            </div>
+
             <div class="form-group">
                 <label>Date</label>
                 <input type="date" id="veh-date">
             </div>
-            <div class="form-group">
-                <label>Expense Type</label>
-                <select id="veh-type">
-                    <option value="Fuel">Fuel</option>
-                    <option value="Maintenance/Service">Maintenance/Service</option>
-                    <option value="Registration">Registration</option>
-                    <option value="Insurance">Insurance</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Amount ($)</label>
-                <input type="number" id="veh-amount" step="0.01" placeholder="0.00">
-            </div>
-            <div class="form-group">
-                <label>Attach Receipt (Optional)</label>
-                <input type="file" id="veh-receipt" accept="image/*,.pdf">
-            </div>
-            <button class="btn-primary" onclick="saveNewRecord('vehicle')">Save Vehicle Log</button>
 
-            <h3 class="section-title">Vehicle History</h3>
+            <!-- Vehicle Expenses Form -->
+            <div id="veh-form-exp">
+                <div class="form-group">
+                    <label>Expense Type</label>
+                    <select id="veh-type">
+                        <option value="Fuel">Fuel</option>
+                        <option value="Maintenance/Service">Maintenance/Service</option>
+                        <option value="Registration">Registration</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Amount ($)</label>
+                    <input type="number" id="veh-amount" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Attach Receipt (Optional)</label>
+                    <input type="file" id="veh-receipt" accept="image/*,.pdf">
+                </div>
+                <button class="btn-primary" onclick="saveNewRecord('vehicle')">Save Expense</button>
+            </div>
+
+            <!-- Vehicle Trips Form -->
+            <div id="veh-form-trip" style="display:none;">
+                <div class="form-group">
+                    <label>Purpose</label>
+                    <select id="veh-purpose">
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Start KM</label>
+                        <input type="number" id="veh-start-km" placeholder="0">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>End KM</label>
+                        <input type="number" id="veh-end-km" placeholder="0">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="saveNewTrip()">Save Trip Log</button>
+            </div>
+
+            <div class="list-header">
+                <h3 class="section-title">History</h3>
+                <div style="text-align: right;">
+                    <div class="list-total" id="veh-total-amount">$0.00</div>
+                    <div class="list-total-sub" id="veh-total-kms">0 KM (Work)</div>
+                </div>
+            </div>
             <div class="list-container" id="vehicle-list"></div>
+            <button id="btn-more-veh" class="btn-secondary hidden" onclick="loadMore('vehicle')">Load More</button>
         </div>
 
         <!-- TAB 3: WFH PUNCH CLOCK -->
@@ -223,8 +305,12 @@
                 <button class="btn-primary btn-start" id="wfh-btn" onclick="toggleWfh()">Start Shift</button>
             </div>
 
-            <h3 class="section-title">WFH Logbook</h3>
+            <div class="list-header">
+                <h3 class="section-title">Logbook</h3>
+                <div class="list-total" id="wfh-total-hours">0.00 Hrs</div>
+            </div>
             <div class="list-container" id="wfh-list"></div>
+            <button id="btn-more-wfh" class="btn-secondary hidden" onclick="loadMore('wfh')">Load More</button>
         </div>
 
         <!-- TAB 4: REPORTS & FILTERS -->
@@ -242,8 +328,9 @@
                 <select id="rep-category">
                     <option value="All">All Transactions (Everything)</option>
                     <option value="General_All">All General Expenses</option>
-                    <option value="Vehicle_All">All Vehicle Expenses</option>
+                    <option value="Vehicle_All">All Vehicle (Expenses + Trips)</option>
                     <option value="Vehicle_Fuel">Vehicle - Fuel Only</option>
+                    <option value="Vehicle_Trip">Vehicle - Work Trips Only</option>
                     <option value="WFH_All">WFH Logbook (Hours)</option>
                 </select>
             </div>
@@ -289,17 +376,31 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // Global State
+        // Global State & Pagination Limits
         window.appData = { general: {}, vehicle: {}, wfh: {} };
+        window.renderLimits = { general: 10, vehicle: 10, wfh: 10 };
         let activeUserId = null; 
 
-        // --- Navigation ---
+        // --- UI Navigation ---
         window.switchTab = function(tabId, title) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             event.target.classList.add('active');
             document.getElementById('header-title').innerText = title;
+            if(tabId === 'vehicle') autoFillStartKm(); // Auto-fill KMs if opening vehicle tab
+        }
+
+        window.switchVehMode = function(mode) {
+            document.getElementById('veh-seg-exp').classList.remove('active');
+            document.getElementById('veh-seg-trip').classList.remove('active');
+            document.getElementById('veh-form-exp').style.display = 'none';
+            document.getElementById('veh-form-trip').style.display = 'none';
+
+            document.getElementById('veh-seg-' + mode).classList.add('active');
+            document.getElementById('veh-form-' + mode).style.display = 'block';
+
+            if(mode === 'trip') autoFillStartKm();
         }
 
         const today = new Date();
@@ -326,7 +427,7 @@
                 document.getElementById('app-screen').style.display = 'block';
                 document.getElementById('bottom-nav').style.display = 'flex';
                 loadData(); 
-                updateWfhUI(); // Check if Punch Clock is running
+                updateWfhUI(); 
             } else {
                 activeUserId = null;
                 document.getElementById('auth-screen').style.display = 'flex';
@@ -379,23 +480,18 @@
 
         window.toggleWfh = async function() {
             const startMs = localStorage.getItem('wfh_active_start');
-            
             if (!startMs) {
-                // START SHIFT
                 localStorage.setItem('wfh_active_start', Date.now());
                 updateWfhUI();
             } else {
-                // END SHIFT
                 const endMs = Date.now();
                 const startDate = new Date(parseInt(startMs));
                 const endDate = new Date(endMs);
 
-                // Math to calculate hours
                 const diffMs = endMs - parseInt(startMs);
                 const diffHrs = (diffMs / (1000 * 60 * 60)).toFixed(2);
                 
                 const timeString = `${formatAMPM(startDate)} - ${formatAMPM(endDate)}`;
-                // Force to YYYY-MM-DD for local date
                 const offset = startDate.getTimezoneOffset();
                 const localDate = new Date(startDate.getTime() - (offset*60*1000));
                 const dateString = localDate.toISOString().split('T')[0];
@@ -410,9 +506,7 @@
                     });
                     localStorage.removeItem('wfh_active_start');
                     updateWfhUI();
-                } catch (error) {
-                    alert("Error: " + error.message);
-                }
+                } catch (error) { alert("Error: " + error.message); }
                 hideLoader();
             }
         }
@@ -428,9 +522,7 @@
             if (window.appData && window.appData[colKey]) {
                 Object.values(window.appData[colKey]).forEach(item => {
                     const itemName = colKey === 'general' ? item.itemName : item.type;
-                    if (itemName === customName && item.date === itemDate) {
-                        matchCount++;
-                    }
+                    if (itemName === customName && item.date === itemDate) matchCount++;
                 });
             }
             
@@ -444,7 +536,41 @@
             return { url, path };
         }
 
-        // --- Save New Record ---
+        // --- Smart KM Engine ---
+        function autoFillStartKm() {
+            let highestKm = 0;
+            Object.values(window.appData.vehicle).forEach(item => {
+                if(item.isTrip && item.endKm > highestKm) highestKm = item.endKm;
+            });
+            if(highestKm > 0) document.getElementById('veh-start-km').value = highestKm;
+        }
+
+        window.saveNewTrip = async function() {
+            const date = document.getElementById('veh-date').value;
+            const purpose = document.getElementById('veh-purpose').value;
+            const startKm = parseFloat(document.getElementById('veh-start-km').value);
+            const endKm = parseFloat(document.getElementById('veh-end-km').value);
+
+            if(isNaN(startKm) || isNaN(endKm) || endKm <= startKm) return alert("Please enter valid Start and End KMs.");
+
+            showLoader("Saving Trip...");
+            try {
+                await addDoc(collection(db, `users/${activeUserId}/tax_vehicle_logs`), {
+                    isTrip: true,
+                    date: date,
+                    purpose: purpose,
+                    startKm: startKm,
+                    endKm: endKm,
+                    totalKm: (endKm - startKm),
+                    timestamp: serverTimestamp()
+                });
+                document.getElementById('veh-start-km').value = endKm; // Prep for next trip
+                document.getElementById('veh-end-km').value = '';
+            } catch (error) { alert("Error: " + error.message); }
+            hideLoader();
+        }
+
+        // --- Save New Record (Expenses) ---
         window.saveNewRecord = async function(type) {
             const isGen = type === 'general';
             const colName = isGen ? "tax_general_expenses" : "tax_vehicle_logs";
@@ -462,6 +588,7 @@
                 const receiptData = await uploadReceipt(file, folder, nameVal, date, type);
 
                 await addDoc(collection(db, `users/${activeUserId}/${colName}`), {
+                    isTrip: false, // Flag as standard expense
                     date: date,
                     [isGen ? 'itemName' : 'type']: nameVal,
                     amount: parseFloat(amount),
@@ -473,31 +600,24 @@
                 document.getElementById(isGen ? 'gen-amount' : 'veh-amount').value = '';
                 document.getElementById(isGen ? 'gen-receipt' : 'veh-receipt').value = '';
                 if(isGen) document.getElementById('gen-name').value = '';
-            } catch (error) {
-                alert("Error: " + error.message);
-            }
+            } catch (error) { alert("Error: " + error.message); }
             hideLoader();
         }
 
         // --- Delete Record ---
         window.deleteRecord = async function(type, docId) {
             if(!confirm("Are you sure you want to permanently delete this?")) return;
-            
             showLoader("Deleting...");
             try {
                 const data = window.appData[type][docId];
-                if(data.receiptPath) {
-                    await deleteObject(ref(storage, data.receiptPath)).catch(e => console.log("File already gone or error"));
-                }
+                if(data.receiptPath) await deleteObject(ref(storage, data.receiptPath)).catch(e => console.log("File issue"));
                 
                 let colName = "tax_wfh_logs";
                 if (type === 'general') colName = "tax_general_expenses";
                 if (type === 'vehicle') colName = "tax_vehicle_logs";
                 
                 await deleteDoc(doc(db, `users/${activeUserId}/${colName}`, docId));
-            } catch (error) {
-                alert("Error deleting: " + error.message);
-            }
+            } catch (error) { alert("Error deleting: " + error.message); }
             hideLoader();
             if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
         }
@@ -509,8 +629,11 @@
             document.getElementById('edit-id').value = docId;
             document.getElementById('edit-collection').value = type;
             document.getElementById('edit-receipt-path').value = data.receiptPath || "";
+            document.getElementById('edit-is-trip').value = data.isTrip ? 'true' : 'false';
             document.getElementById('edit-date').value = data.date;
             
+            const stdFields = document.getElementById('edit-standard-fields');
+            const tripFields = document.getElementById('edit-trip-fields');
             const container = document.getElementById('edit-input-container');
             const label = document.getElementById('edit-name-label');
             const amountInput = document.getElementById('edit-amount');
@@ -518,18 +641,26 @@
             const receiptGroup = document.getElementById('edit-receipt-group');
 
             if (type === 'wfh') {
+                stdFields.style.display = 'block'; tripFields.style.display = 'none';
                 label.innerText = "Time String (Read Only)";
                 container.innerHTML = `<input type="text" id="edit-name" value="${data.timeString}" disabled>`;
                 amountLabel.innerText = "Total Hours";
                 amountInput.value = data.hours;
-                receiptGroup.style.display = 'none'; // No receipts for WFH
+                receiptGroup.style.display = 'none'; 
+            } else if (type === 'vehicle' && data.isTrip) {
+                stdFields.style.display = 'none'; tripFields.style.display = 'block';
+                document.getElementById('edit-start-km').value = data.startKm;
+                document.getElementById('edit-end-km').value = data.endKm;
+                document.getElementById('edit-trip-purpose').value = data.purpose;
             } else if(type === 'general') {
+                stdFields.style.display = 'block'; tripFields.style.display = 'none';
                 label.innerText = "Item Name";
                 container.innerHTML = `<input type="text" id="edit-name" value="${data.itemName}">`;
                 amountLabel.innerText = "Amount ($)";
                 amountInput.value = data.amount;
                 receiptGroup.style.display = 'block';
             } else {
+                stdFields.style.display = 'block'; tripFields.style.display = 'none';
                 label.innerText = "Type";
                 container.innerHTML = `
                     <select id="edit-name">
@@ -553,32 +684,35 @@
         document.getElementById('save-edit-btn').addEventListener('click', async () => {
             const docId = document.getElementById('edit-id').value;
             const type = document.getElementById('edit-collection').value;
-            const oldReceiptPath = document.getElementById('edit-receipt-path').value;
+            const isTrip = document.getElementById('edit-is-trip').value === 'true';
             
-            const newDate = document.getElementById('edit-date').value;
-            const newName = document.getElementById('edit-name').value;
-            const newAmount = document.getElementById('edit-amount').value;
-            const newFile = document.getElementById('edit-receipt').files[0];
-
-            if(!newAmount) return alert("Please fill amount/hours.");
-
             showLoader("Updating...");
             try {
                 let colName = "tax_wfh_logs";
-                let updatePayload = { date: newDate };
+                let updatePayload = { date: document.getElementById('edit-date').value };
 
                 if (type === 'wfh') {
-                    updatePayload.hours = parseFloat(newAmount);
+                    updatePayload.hours = parseFloat(document.getElementById('edit-amount').value);
+                } else if (type === 'vehicle' && isTrip) {
+                    colName = "tax_vehicle_logs";
+                    updatePayload.startKm = parseFloat(document.getElementById('edit-start-km').value);
+                    updatePayload.endKm = parseFloat(document.getElementById('edit-end-km').value);
+                    updatePayload.totalKm = updatePayload.endKm - updatePayload.startKm;
+                    updatePayload.purpose = document.getElementById('edit-trip-purpose').value;
                 } else {
                     colName = type === 'general' ? "tax_general_expenses" : "tax_vehicle_logs";
-                    updatePayload.amount = parseFloat(newAmount);
+                    const newName = document.getElementById('edit-name').value;
+                    const newFile = document.getElementById('edit-receipt').files[0];
+                    const oldReceiptPath = document.getElementById('edit-receipt-path').value;
+
+                    updatePayload.amount = parseFloat(document.getElementById('edit-amount').value);
                     if (type === 'general') updatePayload.itemName = newName;
                     if (type === 'vehicle') updatePayload.type = newName;
 
                     if (newFile) {
                         if(oldReceiptPath) { await deleteObject(ref(storage, oldReceiptPath)).catch(e => console.log("Old file issue")); }
                         const folder = type === 'general' ? 'general_receipts' : 'vehicle_receipts';
-                        const receiptData = await uploadReceipt(newFile, folder, newName, newDate, type);
+                        const receiptData = await uploadReceipt(newFile, folder, newName, updatePayload.date, type);
                         updatePayload.receiptUrl = receiptData.url;
                         updatePayload.receiptPath = receiptData.path;
                     }
@@ -587,23 +721,31 @@
                 await updateDoc(doc(db, `users/${activeUserId}/${colName}`, docId), updatePayload);
                 closeEditModal();
                 if(document.getElementById('tab-reports').classList.contains('active')) window.generateReport();
-            } catch(e) {
-                alert("Error updating: " + e.message);
-            }
+            } catch(e) { alert("Error updating: " + e.message); }
             hideLoader();
         });
 
-        // --- Realtime Data & UI Generators ---
+        // --- Render Engine (With Pagination & Dashboard Totals) ---
+        window.loadMore = function(type) {
+            window.renderLimits[type] += 10;
+            renderList(type);
+        }
+
         function createCardHTML(data, type) {
             let name, valueStr, receiptHtml = '';
             
             if (type === 'wfh') {
                 name = data.timeString;
                 valueStr = `${data.hours} hrs`;
+            } else if (type === 'vehicle' && data.isTrip) {
+                name = `Trip: ${data.purpose}`;
+                valueStr = `${data.totalKm} KM`;
+                receiptHtml = `<span class="text-xs font-semibold text-zinc-500">${data.startKm} -> ${data.endKm}</span>`;
             } else {
                 name = type === 'general' ? data.itemName : data.type;
                 valueStr = `$${data.amount.toFixed(2)}`;
-                receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">📎 View Receipt</a>` : '';
+                // Clean Blue Bubble Link (Removed emoji)
+                receiptHtml = data.receiptUrl ? `<a href="${data.receiptUrl}" target="_blank" class="receipt-link">View Receipt</a>` : '';
             }
 
             return `
@@ -624,43 +766,61 @@
             `;
         }
 
+        function renderList(type) {
+            const arr = Object.values(window.appData[type]).sort((a, b) => new Date(b.date) - new Date(a.date));
+            const listEl = document.getElementById(`${type}-list`);
+            const btnMore = document.getElementById(`btn-more-${type}`);
+            const limit = window.renderLimits[type];
+            
+            listEl.innerHTML = '';
+            
+            // Render up to limit
+            arr.slice(0, limit).forEach(data => {
+                listEl.innerHTML += createCardHTML(data, type);
+            });
+
+            // Toggle Load More button
+            if (arr.length > limit) btnMore.classList.remove('hidden');
+            else btnMore.classList.add('hidden');
+
+            // Dashboard Totals Math
+            if(type === 'general') {
+                const total = arr.reduce((sum, item) => sum + (item.amount || 0), 0);
+                document.getElementById('gen-total-amount').innerText = `$${total.toFixed(2)}`;
+            } else if(type === 'wfh') {
+                const total = arr.reduce((sum, item) => sum + (item.hours || 0), 0);
+                document.getElementById('wfh-total-hours').innerText = `${total.toFixed(2)} Hrs`;
+            } else if(type === 'vehicle') {
+                let totalExp = 0; let totalWorkKm = 0; let totalPerKm = 0;
+                arr.forEach(item => {
+                    if(!item.isTrip) totalExp += (item.amount || 0);
+                    else if(item.purpose === 'Work') totalWorkKm += (item.totalKm || 0);
+                    else totalPerKm += (item.totalKm || 0);
+                });
+                document.getElementById('veh-total-amount').innerText = `$${totalExp.toFixed(2)}`;
+                document.getElementById('veh-total-kms').innerText = `${totalWorkKm} KM (Work) / ${totalPerKm} KM (Personal)`;
+            }
+        }
+
         function loadData() {
             if(!activeUserId) return;
 
-            // General List
             onSnapshot(query(collection(db, `users/${activeUserId}/tax_general_expenses`), orderBy("date", "desc")), (snapshot) => {
-                const list = document.getElementById('general-list');
-                list.innerHTML = '';
                 window.appData.general = {};
-                snapshot.forEach((doc) => {
-                    const data = { id: doc.id, ...doc.data() };
-                    window.appData.general[doc.id] = data;
-                    list.innerHTML += createCardHTML(data, 'general');
-                });
+                snapshot.forEach(doc => window.appData.general[doc.id] = { id: doc.id, ...doc.data() });
+                renderList('general');
             });
 
-            // Vehicle List
             onSnapshot(query(collection(db, `users/${activeUserId}/tax_vehicle_logs`), orderBy("date", "desc")), (snapshot) => {
-                const list = document.getElementById('vehicle-list');
-                list.innerHTML = '';
                 window.appData.vehicle = {};
-                snapshot.forEach((doc) => {
-                    const data = { id: doc.id, ...doc.data() };
-                    window.appData.vehicle[doc.id] = data;
-                    list.innerHTML += createCardHTML(data, 'vehicle');
-                });
+                snapshot.forEach(doc => window.appData.vehicle[doc.id] = { id: doc.id, ...doc.data() });
+                renderList('vehicle');
             });
 
-            // WFH List
             onSnapshot(query(collection(db, `users/${activeUserId}/tax_wfh_logs`), orderBy("date", "desc")), (snapshot) => {
-                const list = document.getElementById('wfh-list');
-                list.innerHTML = '';
                 window.appData.wfh = {};
-                snapshot.forEach((doc) => {
-                    const data = { id: doc.id, ...doc.data() };
-                    window.appData.wfh[doc.id] = data;
-                    list.innerHTML += createCardHTML(data, 'wfh');
-                });
+                snapshot.forEach(doc => window.appData.wfh[doc.id] = { id: doc.id, ...doc.data() });
+                renderList('wfh');
             });
         }
 
@@ -677,48 +837,48 @@
 
             if((cat === 'All' && !isWfhMode) || cat.includes('General')) {
                 Object.values(window.appData.general).forEach(item => {
-                    if(item.date >= start && item.date <= end) {
-                        item._type = 'general';
-                        results.push(item);
-                    }
+                    if(item.date >= start && item.date <= end) { item._type = 'general'; results.push(item); }
                 });
             }
 
             if((cat === 'All' && !isWfhMode) || cat.includes('Vehicle')) {
                 Object.values(window.appData.vehicle).forEach(item => {
                     if(item.date >= start && item.date <= end) {
-                        if(cat.includes('_') && cat !== 'Vehicle_All') {
-                            const subCat = cat.split('_')[1];
-                            if(item.type !== subCat) return; 
-                        }
-                        item._type = 'vehicle';
-                        results.push(item);
+                        if(cat === 'Vehicle_Fuel' && (item.isTrip || item.type !== 'Fuel')) return;
+                        if(cat === 'Vehicle_Trip' && (!item.isTrip || item.purpose !== 'Work')) return;
+                        item._type = 'vehicle'; results.push(item);
                     }
                 });
             }
 
             if(isWfhMode) {
                 Object.values(window.appData.wfh).forEach(item => {
-                    if(item.date >= start && item.date <= end) {
-                        item._type = 'wfh';
-                        results.push(item);
-                    }
+                    if(item.date >= start && item.date <= end) { item._type = 'wfh'; results.push(item); }
                 });
             }
 
             results.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            let total = 0;
+            let totalExp = 0; let totalKm = 0;
             const list = document.getElementById('report-list');
             list.innerHTML = '';
 
             results.forEach(data => {
-                total += (data._type === 'wfh') ? data.hours : data.amount;
+                if (data._type === 'wfh') totalExp += data.hours;
+                else if (data.isTrip) totalKm += data.totalKm;
+                else totalExp += data.amount;
+                
                 list.innerHTML += createCardHTML(data, data._type);
             });
 
-            document.getElementById('report-total-label').innerText = isWfhMode ? "Total Logged Hours" : "Total Claimable";
-            document.getElementById('report-total-amount').innerText = isWfhMode ? `${total.toFixed(2)} hrs` : `$${total.toFixed(2)}`;
+            document.getElementById('report-total-label').innerText = isWfhMode ? "Total Logged Hours" : "Total Claimable & Driven";
+            
+            if (cat.includes('Vehicle') && !cat.includes('Fuel')) {
+                document.getElementById('report-total-amount').innerText = `$${totalExp.toFixed(2)} | ${totalKm} KM`;
+            } else {
+                document.getElementById('report-total-amount').innerText = isWfhMode ? `${totalExp.toFixed(2)} hrs` : `$${totalExp.toFixed(2)}`;
+            }
+            
             document.getElementById('report-count').innerText = `(${results.length} items)`;
             document.getElementById('report-results').style.display = 'block';
         }
